@@ -26,7 +26,7 @@ int main(int argc, char **argv)
     n.getParam("psmove_camera/device_id", device_id);
 
     image_transport::ImageTransport it(n);
-    image_transport::Publisher pub_img = it.advertise(output_video_topic, 1);
+    image_transport::Publisher pub_img = it.advertise(output_video_topic, 10);
 
     cv::VideoCapture cap;
 

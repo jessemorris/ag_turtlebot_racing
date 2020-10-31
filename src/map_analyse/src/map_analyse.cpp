@@ -34,6 +34,7 @@ class MapAnalyse {
         image_transport::ImageTransport image_transport;
         image_transport::Subscriber image_subscriber;
         image_transport::Publisher image_test_pub;
+        image_transport::Publisher image_mask_pub;
 
         std::string input_image_topic;
 
@@ -60,7 +61,8 @@ MapAnalyse::MapAnalyse(ros::NodeHandle& _nh):
                                                &MapAnalyse::image_callback, this);
 
 
-        image_test_pub = image_transport.advertise("/map_test", 1);
+        image_test_pub = image_transport.advertise("/map_analyse/map_test", 10);
+        image_mask_pub = image_transport.advertise("/map_analyse/map_mask", 10);
         // nh.param<std::string>("/realtime_vdo_slam/topic_prefix", topic_prefix, "/gmsl/");
 
         //min range
@@ -91,15 +93,15 @@ geometry_msgs::PoseStamped MapAnalyse::get_turtlebot_pose(cv::Mat& src) {
 
     //adapt thresh only on saturation
     std::vector<cv::Mat> channels(3);
-    cv::Mat s_adapted;
+    cv::Mat s_adapted, h_adapted;
     cv::Mat hsv_adapted(src.rows, src.cols, CV_8UC3);
     cv::split(hsv, channels);
 
-    cv::adaptiveThreshold(channels[1],s_adapted,255,cv::ADAPTIVE_THRESH_GAUSSIAN_C,cv::THRESH_BINARY,35,0);
+    cv::adaptiveThreshold(channels[1],s_adapted,255,cv::ADAPTIVE_THRESH_GAUSSIAN_C,cv::THRESH_BINARY,17,0);
 
     std::vector<cv::Mat> channels_adapted;
     channels_adapted.push_back(channels[0]);
-    channels_adapted.push_back(channels[1]);
+    channels_adapted.push_back(s_adapted);
     channels_adapted.push_back(channels[2]);
 
     cv::merge(channels_adapted, hsv_adapted);
@@ -121,13 +123,24 @@ geometry_msgs::PoseStamped MapAnalyse::get_turtlebot_pose(cv::Mat& src) {
 
     //close small holes
     cv::Mat morph_kernel_open = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5,5), cv::Point(-1,-1));
+    cv::Mat morph_kernel_close = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(12,12), cv::Point(-1,-1));
+
     cv::morphologyEx(mask, mask, cv::MORPH_OPEN, morph_kernel_open);
-    // cv::morphologyEx(mask, mask, cv::MORPH_CLOSE, morph_kernel);
+    cv::morphologyEx(mask, mask, cv::MORPH_CLOSE, morph_kernel_close);
+
+    // cv::Mat hit_miss_kernal = (cv::Mat_<int>(3, 3) <<
+    //     0, 1, 0,
+    //     1, -1, 1,
+    //     0, 1, 0);
+
+    // cv::morphologyEx(mask, mask, cv::MORPH_HITMISS, hit_miss_kernal);
+
+
 // 
     // ROS_INFO_STREAM("here2");
 
     //now smooth using gaussian
-    // cv::GaussianBlur(mask, mask, cv::Size(5,5), 0);
+    // cv::GaussianBlur(mask, mask, cv::Size(3,3), 0);
 
     //now get blobs
     cv::Mat canny_output;
@@ -190,6 +203,10 @@ geometry_msgs::PoseStamped MapAnalyse::get_turtlebot_pose(cv::Mat& src) {
     // image_test_pub.publish(img_msg);
     img_msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", dst).toImageMsg();
     image_test_pub.publish(img_msg);
+
+
+    sensor_msgs::ImagePtr img_mask_msg  = cv_bridge::CvImage(std_msgs::Header(), "mono8", mask).toImageMsg();
+    image_mask_pub.publish(img_mask_msg);
 
     geometry_msgs::PoseStamped pose;
 
