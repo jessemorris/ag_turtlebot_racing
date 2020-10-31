@@ -34,9 +34,13 @@ int main(int argc, char **argv)
         ROS_ERROR("Camera failed to open");
         return -1;
     }
+    //cap.set(cv::CAP_PROP_XI_AUTO_WB, 0);
+    // cap.set(cv::CAP_PROP_AUTO_WB, 0);
 
     cv::Mat image;
-    sensor_msgs::ImagePtr img_msg; // >> message to be sent
+    sensor_msgs::ImagePtr img_msg;
+
+    sensor_msgs::CameraInfo camera_info;
 
     while (ros::ok()) {
         cap.read(image);
