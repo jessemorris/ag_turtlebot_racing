@@ -1,0 +1,10 @@
+catkin build
+source devel.bash
+roscore
+roslaunch psmove_camera psmove_camera.launch
+rostopic list
+rosrun camera_calibration cameracalibrator.py --size 8x6 --square 0.023 image:=//psmove/camera/raw_image camera:=/psmove_camera --no-service-check
+
+esc then : (not ;)
+wq
+
