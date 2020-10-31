@@ -1,0 +1,13 @@
+<launch>
+
+    <arg name="config_file" default="map_analyse_config.yaml"/>
+
+    <node pkg="map_analyse" type="map_analyse_node" name="map_analyse" output="screen">
+    <rosparam command="load" file="$(find map_analyse)/config/$(arg config_file)"/>
+
+    <!-- set a private parameter for the node -->
+    <param name="input_camera_topic" value="/psmove/camera/raw_image"/>
+    
+    </node> 
+    
+</launch>
