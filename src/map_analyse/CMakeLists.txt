@@ -19,9 +19,9 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(OpenCV)
 
 ## Setup include directories
-#include_directories(${catkin_INCLUDE_DIRS},
+include_directories(${catkin_INCLUDE_DIRS},
 #  include/${PROJECT_NAME}
-#  include)
+  include)
 
 catkin_package(
   LIBRARIES ${PROJECT_NAME}
@@ -143,13 +143,16 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-#    include
+    include
     ${catkin_INCLUDE_DIRS}
 )
 
 
 add_executable(${PROJECT_NAME}_node
-		src/map_analyse.cpp)
+		src/main.cpp
+		src/map_analyse.cpp
+		src/turtlebot.cpp
+)
 
 
 
