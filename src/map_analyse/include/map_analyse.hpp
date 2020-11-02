@@ -48,12 +48,12 @@ class MapAnalyse {
         std::vector<int> blue_min_threshold_1;
         std::vector<int> blue_max_threshold_1;
 
-        std::vector<int> blue_min_threshold_2;
-        std::vector<int> blue_max_threshold_2;
+        std::vector<int> red_min_threshold_1;
+        std::vector<int> red_max_threshold_1;
         float min_area;
 
 
-        
+
         std::unique_ptr<Turtlebot> turtlebot;
 
 };

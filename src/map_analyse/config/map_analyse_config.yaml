@@ -23,13 +23,13 @@ blue_threshold:
 #this is red for testing
 red_threshold:
   min_threshold_1:
-    - 127
-    - 80
-    - 64
+    - 0
+    - 0
+    - 180
   max_threshold_1:
-    - 179
-    - 217
-    - 124
+    - 195
+    - 44
+    - 255
 
   min_threshold_2:
     - 173

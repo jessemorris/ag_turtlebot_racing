@@ -21,8 +21,8 @@
 
 MapAnalyse::MapAnalyse(ros::NodeHandle& _nh):
         nh(_nh),
-        image_transport(_nh) 
-    {   
+        image_transport(_nh)
+    {
         //private config
 
         nh.getParam("map_analyse/input_camera_topic", input_image_topic);
@@ -40,8 +40,8 @@ MapAnalyse::MapAnalyse(ros::NodeHandle& _nh):
         nh.getParam("/map_analyse/blue_threshold/max_threshold_1", blue_max_threshold_1);
 
         //higher range
-        nh.getParam("/map_analyse/blue_threshold/min_threshold_2", blue_min_threshold_2);
-        nh.getParam("/map_analyse/blue_threshold/max_threshold_2", blue_max_threshold_2);
+        nh.getParam("/map_analyse/red_threshold/min_threshold_1", red_min_threshold_1);
+        nh.getParam("/map_analyse/red_threshold/max_threshold_1", red_max_threshold_1);
         // nh.param<std::vector<int>>("/map_analyse/blue_threshold/min_threshold", blue_min_threshold);
         // nh.param<std::vector<int>>("/map_analyse/blue_threshold/max_threshold", blue_max_threshold);
 
@@ -82,14 +82,20 @@ geometry_msgs::PoseStamped MapAnalyse::get_turtlebot_pose(cv::Mat& src) {
     // ROS_INFO_STREAM("here");
 
     cv::Mat mask1, mask2, mask;
-    cv::inRange(hsv, cv::Scalar(blue_min_threshold_1[0], blue_min_threshold_1[1], blue_min_threshold_1[2]),
-                cv::Scalar(blue_max_threshold_1[0], blue_max_threshold_1[1], blue_max_threshold_1[2]), mask);
+    // cv::inRange(hsv, cv::Scalar(blue_min_threshold_1[0], blue_min_threshold_1[1], blue_min_threshold_1[2]),
+    //             cv::Scalar(blue_max_threshold_1[0], blue_max_threshold_1[1], blue_max_threshold_1[2]), mask);
+
+
+    cv::inRange(hsv, cv::Scalar(red_min_threshold_1[0], red_min_threshold_1[1], red_min_threshold_1[2]),
+                cv::Scalar(red_max_threshold_1[0], red_max_threshold_1[1], red_max_threshold_1[2]), mask);
+
+
 
     // cv::inRange(hsv_adapted, cv::Scalar(blue_min_threshold_2[0], blue_min_threshold_2[1], blue_min_threshold_2[2]),
     //             cv::Scalar(blue_max_threshold_2[0], blue_max_threshold_2[1], blue_max_threshold_2[2]), mask2);
 
     // // ROS_INFO_STREAM("here1");
-    
+
     // cv::bitwise_or(mask1, mask2, mask);
 
     //close small holes
@@ -107,7 +113,7 @@ geometry_msgs::PoseStamped MapAnalyse::get_turtlebot_pose(cv::Mat& src) {
     // cv::morphologyEx(mask, mask, cv::MORPH_HITMISS, hit_miss_kernal);
 
 
-// 
+//
     // ROS_INFO_STREAM("here2");
 
     //now smooth using gaussian
@@ -169,14 +175,14 @@ geometry_msgs::PoseStamped MapAnalyse::get_turtlebot_pose(cv::Mat& src) {
                     //calculate line angle
                     // float angle = std::atan2((l[1] - l[3]), (l[0] - l[2]));
                     // point_angles.push_back(angle);
-                    
+
 
                 }
                 // cv::Mat best_labels, centers;
                 // cv::kmeans(point_angles, 2, best_labels,
                 //         cv::TermCriteria( CV_TERMCRIT_EPS+CV_TERMCRIT_ITER, 10, 1.0),
                 //         3, cv::KMEANS_PP_CENTERS, centers);
-                
+
                 // ROS_INFO_STREAM("size of centers " << centers.size());
                 // //this should always be 2
                 // for (int center = 0; center < centers.rows; center++) {
@@ -188,14 +194,14 @@ geometry_msgs::PoseStamped MapAnalyse::get_turtlebot_pose(cv::Mat& src) {
                 //     cv::line(dst, cv::Point(centroids[i].x, centroids[i].y), cv::Point(x2, y2), color, 3, cv::LINE_AA);
                 //     ROS_INFO_STREAM("results " << found_center);
                 // }
-                
 
-                
+
+
             }
 
 
 
-            
+
 
 
             // cv::RotatedRect rotated_rec = minAreaRect( contours[i]);
@@ -237,6 +243,5 @@ void MapAnalyse::image_callback(const sensor_msgs::ImageConstPtr& msg) {
     cv::Mat image = cv_ptr->image;
 
     auto pose = get_turtlebot_pose(image);
-    
-}
 
+}

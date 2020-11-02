@@ -3,8 +3,8 @@
     <node pkg="psmove_camera" type="psmove_camera_node" name="psmove_camera" output="screen">
     <!-- set a private parameter for the node -->
     <param name="image_topic" value="/psmove/camera/raw_image"/>
-    <param name="device_id" type="int" value="2"/>
-    
-    </node> 
-    
+    <param name="device_id" type="int" value="0"/>
+
+    </node>
+
 </launch>
