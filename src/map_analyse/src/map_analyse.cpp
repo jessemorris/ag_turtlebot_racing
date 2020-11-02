@@ -14,6 +14,7 @@
 
 
 #include <string>
+#include <memory>
 
 
 #include "map_analyse.hpp"
@@ -46,6 +47,11 @@ MapAnalyse::MapAnalyse(ros::NodeHandle& _nh):
         // nh.param<std::vector<int>>("/map_analyse/blue_threshold/max_threshold", blue_max_threshold);
 
         nh.param<float>("/map_analyse/min_area", min_area, 100);
+
+        // ROS_INFO_STREAM("package path " << ros::package::getPath("map_analyse"));
+        orb_tracker = std::make_unique<OrbTracker>("/home/jesse//Code/src/ar_turtlebot_racing/src/map_analyse/config/turtlebot_pose.png");
+
+
 
 
 
@@ -202,8 +208,6 @@ geometry_msgs::PoseStamped MapAnalyse::get_turtlebot_pose(cv::Mat& src) {
 
 
 
-
-
             // cv::RotatedRect rotated_rec = minAreaRect( contours[i]);
             // minimum_rectangles.push_back(rotated_rec);
 
@@ -220,10 +224,14 @@ geometry_msgs::PoseStamped MapAnalyse::get_turtlebot_pose(cv::Mat& src) {
         }
     }
 
+    cv::Mat aligned = orb_tracker->calculate_image_alignment(mask);
+
     sensor_msgs::ImagePtr img_msg; // >> message to be sent
     // img_msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", hsv).toImageMsg();
     // image_test_pub.publish(img_msg);
-    img_msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", dst).toImageMsg();
+    // img_msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", dst).toImageMsg();
+    img_msg = cv_bridge::CvImage(std_msgs::Header(), "mono8", aligned).toImageMsg();
+
     image_test_pub.publish(img_msg);
 
 

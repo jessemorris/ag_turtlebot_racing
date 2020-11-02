@@ -7,10 +7,12 @@
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <opencv2/features2d.hpp>
 #include <sensor_msgs/Image.h>
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/highgui.hpp>
+#include <opencv2/core/cvstd.hpp>
 #include <image_transport/image_transport.h>
 #include <iostream>
 #include <stdio.h>
@@ -21,6 +23,8 @@
 
 
 #include "turtlebot.hpp"
+#include "orb_tracker.hpp"
+
 
 
 class MapAnalyse {
@@ -53,8 +57,10 @@ class MapAnalyse {
         float min_area;
 
 
-
         std::unique_ptr<Turtlebot> turtlebot;
+        std::unique_ptr<OrbTracker> orb_tracker;
+
+        
 
 };
 
