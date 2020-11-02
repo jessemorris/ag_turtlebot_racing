@@ -26,7 +26,7 @@ int main(int argc, char **argv)
     n.getParam("psmove_camera/device_id", device_id);
 
     image_transport::ImageTransport it(n);
-    image_transport::Publisher pub_img = it.advertise(output_video_topic, 10);
+    image_transport::Publisher pub_img = it.advertise(output_video_topic, 1);
 
     cv::VideoCapture cap;
 
@@ -41,6 +41,7 @@ int main(int argc, char **argv)
     sensor_msgs::ImagePtr img_msg;
 
     sensor_msgs::CameraInfo camera_info;
+    ros::Rate r(10);
 
     while (ros::ok()) {
         cap.read(image);
@@ -52,6 +53,7 @@ int main(int argc, char **argv)
             img_msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", image).toImageMsg();
             pub_img.publish(img_msg);
         }
+        r.sleep();
         ros::spinOnce();
 
     }

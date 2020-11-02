@@ -39,6 +39,7 @@ class MapAnalyse {
         //gets the postion and orientation of the turtlebot in the world frame
         geometry_msgs::PoseStamped get_turtlebot_pose(cv::Mat& src);
 
+
     private:
         ros::NodeHandle nh;
         image_transport::ImageTransport image_transport;
