@@ -26,13 +26,13 @@ int main(int argc, char **argv)
     n.getParam("psmove_camera/image_topic", output_video_topic);
 
     int device_id;
-    n.getParam("psmove_camera/device_id", device_id);
+    n.getParam("psmove_camera/cam_source", device_id);
 
-    int cam_source;
-    n.getParam("psmove_camera/cam_source", cam_source);
+    // int cam_source;
+    // n.getParam("psmove_camera/cam_source", cam_source);
 
-    std::cout << "\ntesting:" << cam_source << "\n" << std::endl;
-    device_id = cam_source;
+    // std::cout << "\ntesting:" << cam_source << "\n" << std::endl;
+    // device_id = cam_source;
 
 
     image_transport::ImageTransport it(n);
