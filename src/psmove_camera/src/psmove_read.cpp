@@ -17,16 +17,26 @@
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "psmove_camera");
+
+
+
     ros::NodeHandle n;
 
     std::string output_video_topic;
     n.getParam("psmove_camera/image_topic", output_video_topic);
 
     int device_id;
-    n.getParam("psmove_camera/device_id", device_id);
+    n.getParam("psmove_camera/cam_source", device_id);
+
+    // int cam_source;
+    // n.getParam("psmove_camera/cam_source", cam_source);
+
+    // std::cout << "\ntesting:" << cam_source << "\n" << std::endl;
+    // device_id = cam_source;
+
 
     image_transport::ImageTransport it(n);
-    image_transport::Publisher pub_img = it.advertise(output_video_topic, 1);
+    image_transport::Publisher pub_img = it.advertise(output_video_topic, 10);
 
     cv::VideoCapture cap;
 
@@ -34,9 +44,13 @@ int main(int argc, char **argv)
         ROS_ERROR("Camera failed to open");
         return -1;
     }
+    //cap.set(cv::CAP_PROP_XI_AUTO_WB, 0);
+    // cap.set(cv::CAP_PROP_AUTO_WB, 0);
 
     cv::Mat image;
-    sensor_msgs::ImagePtr img_msg; // >> message to be sent
+    sensor_msgs::ImagePtr img_msg;
+
+    sensor_msgs::CameraInfo camera_info;
 
     while (ros::ok()) {
         cap.read(image);

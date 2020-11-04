@@ -1,20 +1,17 @@
 <launch>
 
-    <node pkg="psmove_camera" type="psmove_camera_node" name="psmove_camera" output="screen">
+    <!-- declare arg to be passed in
+    <arg name="hoge" />
+    -->
+
+    <node pkg="psmove_camera" type="psmove_camera_node" name="psmove_camera"
+      output="screen">
     <!-- set a private parameter for the node -->
-<<<<<<< HEAD
-    <param name="image_topic" value="camera/raw_image"/>
-    <param name="device_id" type="int" value="0"/>
+    <param name="image_topic" value="/psmove/camera/raw_image"/>
+    <param name="device_id" type="int" value="2"/>
+    <param name="cam_source" value="$(arg cam_source)"/>
 
     </node>
 
-  </group>
 </launch>
-=======
-    <param name="image_topic" value="/psmove/camera/raw_image"/>
-    <param name="device_id" type="int" value="2"/>
-    
-    </node> 
-    
-</launch>
->>>>>>> 7c65758a18b42aebc4263e8dbd6ab5f974a1b891
+>>>>>>> oli

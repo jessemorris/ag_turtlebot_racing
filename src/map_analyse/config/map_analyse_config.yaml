@@ -2,21 +2,42 @@
 
 blue_threshold:
   min_threshold_1:
-    - 22
-    - 0
-    - 157
+    - 56
+    - 68
+    - 93
   max_threshold_1:
-    - 97
-    - 76
+    - 133
+    - 206
+    - 205
+
+  min_threshold_2:
+    - 84
+    - 24
+    - 126
+  max_threshold_2:
+    - 255
+    - 129
+    - 255
+
+
+#this is red for testing
+red_threshold:
+  min_threshold_1:
+    - 0
+    - 0
+    - 180
+  max_threshold_1:
+    - 195
+    - 44
     - 255
 
   min_threshold_2:
-    - 76
-    - 22
-    - 255
+    - 173
+    - 166
+    - 79
   max_threshold_2:
     - 255
     - 255
     - 255
 
-min_area: 100
+min_area: 400
