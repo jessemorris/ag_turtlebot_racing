@@ -17,6 +17,9 @@
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "psmove_camera");
+
+
+
     ros::NodeHandle n;
 
     std::string output_video_topic;
@@ -24,6 +27,13 @@ int main(int argc, char **argv)
 
     int device_id;
     n.getParam("psmove_camera/device_id", device_id);
+
+    int cam_source;
+    n.getParam("psmove_camera/cam_source", cam_source);
+
+    std::cout << "\ntesting:" << cam_source << "\n" << std::endl;
+    device_id = cam_source;
+
 
     image_transport::ImageTransport it(n);
     image_transport::Publisher pub_img = it.advertise(output_video_topic, 10);

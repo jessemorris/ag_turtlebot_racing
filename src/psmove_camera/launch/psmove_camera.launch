@@ -10,6 +10,9 @@
     <param name="image_topic" value="/psmove/camera/raw_image"/>
     <param name="device_id" type="int" value="1"/>
 
+    <param name="cam_source" value="$(arg cam_source)"/>
+
+
     </node>
 
 </launch>
