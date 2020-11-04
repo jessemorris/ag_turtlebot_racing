@@ -152,6 +152,7 @@ add_executable(${PROJECT_NAME}_node
 		src/main.cpp
 		src/map_analyse.cpp
 		src/turtlebot.cpp
+		src/orb_tracker.cpp
 )
 
 
