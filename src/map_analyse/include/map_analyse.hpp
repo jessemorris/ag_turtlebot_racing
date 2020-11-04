@@ -23,7 +23,7 @@
 
 
 #include "turtlebot.hpp"
-#include "orb_tracker.hpp"
+// #include "orb_tracker.hpp"
 
 
 
@@ -59,7 +59,7 @@ class MapAnalyse {
 
 
         std::unique_ptr<Turtlebot> turtlebot;
-        std::unique_ptr<OrbTracker> orb_tracker;
+        // std::unique_ptr<OrbTracker> orb_tracker;
 
         
 
