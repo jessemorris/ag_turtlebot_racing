@@ -9,6 +9,7 @@ project(map_analyse)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
 	roscpp
+	tf2
 	tf2_ros
 	tf2_sensor_msgs
 	image_transport
@@ -28,6 +29,7 @@ catkin_package(
 #	INCLUDE_DIRS include
 	CATKIN_DEPENDS
 	roscpp
+	tf2
 	image_transport
 	std_msgs
 	tf2_ros

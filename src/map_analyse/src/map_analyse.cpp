@@ -2,8 +2,10 @@
 #include <nodelet/loader.h>
 
 #include <cv_bridge/cv_bridge.h>
+#include <tf2/LinearMath/Quaternion.h>
 #include <sensor_msgs/image_encodings.h>
 #include <geometry_msgs/PoseStamped.h>
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include <sensor_msgs/Image.h>
 #include <opencv2/core.hpp>
 #include <opencv2/videoio.hpp>
@@ -49,9 +51,7 @@ MapAnalyse::MapAnalyse(ros::NodeHandle& _nh):
 
         nh.param<float>("/map_analyse/min_area", min_area, 100);
 
-        // ROS_INFO_STREAM("package path " << ros::package::getPath("map_analyse"));
         // orb_tracker = std::make_unique<OrbTracker>("/home/jesse//Code/src/ar_turtlebot_racing/src/map_analyse/config/turtlebot_pose.png");
-
 
 
 
@@ -148,6 +148,7 @@ geometry_msgs::PoseStamped MapAnalyse::get_turtlebot_pose(cv::Mat& src) {
     cv::RNG rng(12345);
     cv::Scalar color = cv::Scalar(rng.uniform(0, 256), rng.uniform(0,256), rng.uniform(0,256) );
 
+    geometry_msgs::PoseStamped pose_stamped;
 
     std::vector<cv::Point2f> points_list;
     std::vector<cv::Vec4i> probalistic_lines;
@@ -281,6 +282,7 @@ geometry_msgs::PoseStamped MapAnalyse::get_turtlebot_pose(cv::Mat& src) {
                 ROS_WARN_STREAM("3 lines not found from HSV images. Do something now.");
             }
             else {
+
                 //upon observation i can just take the first and third lines. The first and third angles will be the same
                 //so this gives me direction
                 // float angle_line1 = std::atan((u_pairs[0].second.y - u_pairs[0].first.y)/(u_pairs[0].second.x - u_pairs[0].first.x));
@@ -348,12 +350,48 @@ geometry_msgs::PoseStamped MapAnalyse::get_turtlebot_pose(cv::Mat& src) {
                 }
                 else {
 
-                  cv::Point2f start_of_arrow(center_x_back, center_y_back);
+                    cv::Point2f start_of_arrow(center_x_back, center_y_back);
 
-                  cv::Point2f end_of_arrow(center_x_front, center_y_front);
-                  // cv::Point2f start_of_arrow =  centroids[i];
-                  cv::arrowedLine(dst, start_of_arrow, end_of_arrow, color, 20);
+                    cv::Point2f end_of_arrow(center_x_front, center_y_front);
+                    // cv::Point2f start_of_arrow =  centroids[i];
+                    cv::arrowedLine(dst, start_of_arrow, end_of_arrow, color, 20);
 
+                    float y_val = center_y_front - center_y_back;
+                    float x_val = center_x_front - center_x_back;
+
+                    float theta = 0;
+
+                    if (x_val > 0 && y_val > 0) {
+                        theta = std::atan(abs(y_val/x_val));
+                    }
+
+                    else if (x_val < 0 && y_val > 0) {
+                        theta = std::atan(abs(y_val/x_val)) + M_PI/2.0;
+                    }
+
+                    else if (x_val < 0 && y_val < 0) {
+                        theta = std::atan(abs(y_val/x_val)) + M_PI;
+                    }
+
+                    else if (x_val > 0 && y_val < 0) {
+                        theta = std::atan(abs(y_val/x_val)) + 1.5*M_PI;
+                    }
+
+                    float centre_x = (center_x_front + center_x_back)/2.0;
+                    float centre_y = (center_y_front + center_y_back)/2.0;
+
+                    tf2::Quaternion quat;
+                    quat.setRPY(theta, 0, 0);
+
+                    tf2::convert(quat, pose_stamped.pose.orientation);
+                    pose_stamped.pose.position.x = centre_x;
+                    pose_stamped.pose.position.y = centre_y;
+                    pose_stamped.pose.position.z = 0;
+
+                    std_msgs::Header header;
+                    header.frame_id = "camera_map";
+
+                    pose_stamped.header = header;
                 }
             }
         }
@@ -375,12 +413,10 @@ geometry_msgs::PoseStamped MapAnalyse::get_turtlebot_pose(cv::Mat& src) {
     sensor_msgs::ImagePtr img_mask_msg  = cv_bridge::CvImage(std_msgs::Header(), "mono8", mask).toImageMsg();
     image_mask_pub.publish(img_mask_msg);
 
-    geometry_msgs::PoseStamped pose;
-
 
     //TODO analyse pose, convert to world frame
 
-    return pose;
+    return pose_stamped;
 }
 
 
@@ -389,5 +425,12 @@ void MapAnalyse::image_callback(const sensor_msgs::ImageConstPtr& msg) {
     cv::Mat image = cv_ptr->image;
 
     auto pose = get_turtlebot_pose(image);
+
+    if (!turtlebot) {
+        turtlebot = std::make_unique<Turtlebot>(pose);
+    }
+    else {
+        turtlebot->update_pose_camera(pose);
+    }
 
 }
