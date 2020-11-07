@@ -23,7 +23,7 @@ class Turtlebot {
 
 
     public:
-        Turtlebot(const geometry_msgs::PoseStamped& _inital_pose, int _history_size = 5);
+        Turtlebot(ros::NodeHandle& _nh, const geometry_msgs::PoseStamped& _inital_pose, int _history_size = 5);
         ~Turtlebot() {}
 
         /**
@@ -38,6 +38,10 @@ class Turtlebot {
         const geometry_msgs::PoseStamped& get_latest_camera_pose() const;
 
     private:
+        ros::NodeHandle nh;
+
+        ros::Publisher camera_frame_odom_pub;
+
         //how many poses to keep in memory
         int history_size;
 

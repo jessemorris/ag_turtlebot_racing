@@ -369,40 +369,51 @@ bool MapAnalyse::get_turtlebot_pose(cv::Mat& src, geometry_msgs::PoseStamped& po
                     // cv::Point2f start_of_arrow =  centroids[i];
                     cv::arrowedLine(dst, start_of_arrow, end_of_arrow, color, 20);
 
-                    float y_val = center_y_front - center_y_back;
+                    float y_val = (src.rows-center_y_front) - (src.rows-center_y_back);
                     float x_val = center_x_front - center_x_back;
 
                     float theta = 0;
 
-                    if (x_val > 0 && y_val > 0) {
-                        theta = std::atan(abs(y_val/x_val));
-                    }
+                    if (x_val == 0 && y_val < 0) {
+                        theta = M_PI/4;
 
-                    else if (x_val < 0 && y_val > 0) {
-                        theta = std::atan(abs(y_val/x_val)) + M_PI/2.0;
                     }
 
                     else if (x_val < 0 && y_val < 0) {
-                        theta = std::atan(abs(y_val/x_val)) + M_PI;
+                        theta = std::atan(abs(y_val/x_val));
+                        ROS_INFO_STREAM("\n4\n");
                     }
 
-                    else if (x_val > 0 && y_val < 0) {
-                        theta = std::atan(abs(y_val/x_val)) + 1.5*M_PI;
+                    else if (x_val > 0 && y_val < 0.1) {
+                        theta = M_PI - std::atan(abs(y_val/x_val));
+                        ROS_INFO_STREAM("theta 2: " << theta);
+
+                    }
+
+                    else if (x_val > 0 && y_val > 0.1) {
+                        theta = std::atan(abs(y_val/x_val)) + M_PI;
+                        ROS_INFO_STREAM("theta 1: " << theta);
+                    }
+
+                    else if (x_val < 0 && y_val > 0) {
+                        theta = 2*M_PI - std::atan(abs(y_val/x_val));
+                        ROS_INFO_STREAM("\n3\n");
                     }
 
                     float centre_x = (center_x_front + center_x_back)/2.0;
                     float centre_y = (center_y_front + center_y_back)/2.0;
 
                     tf2::Quaternion quat;
-                    quat.setRPY(theta, 0, 0);
+                    quat.setRPY(0, 0, theta);
 
                     tf2::convert(quat, pose_stamped.pose.orientation);
-                    pose_stamped.pose.position.x = centre_x;
-                    pose_stamped.pose.position.y = centre_y;
+                    pose_stamped.pose.position.x = centre_x/100;
+                    pose_stamped.pose.position.y = centre_y/100;
                     pose_stamped.pose.position.z = 0;
 
                     std_msgs::Header header;
-                    header.frame_id = "camera_map";
+                    header.frame_id = "/map";
+                    header.stamp = ros::Time::now();
 
                     pose_stamped.header = header;
                 }
@@ -445,7 +456,7 @@ void MapAnalyse::image_callback(const sensor_msgs::ImageConstPtr& msg) {
     }
 
     if (!turtlebot) {
-        turtlebot = std::make_unique<Turtlebot>(pose);
+        turtlebot = std::make_unique<Turtlebot>(nh, pose);
     }
     else {
         turtlebot->update_pose_camera(pose);
