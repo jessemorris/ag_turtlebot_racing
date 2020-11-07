@@ -37,7 +37,7 @@ class MapAnalyse {
         void image_callback(const sensor_msgs::ImageConstPtr& msg);
 
         //gets the postion and orientation of the turtlebot in the world frame
-        geometry_msgs::PoseStamped get_turtlebot_pose(cv::Mat& src);
+        bool get_turtlebot_pose(cv::Mat& src,  geometry_msgs::PoseStamped& pose_stamped);
 
 
     private:
@@ -61,7 +61,7 @@ class MapAnalyse {
         std::unique_ptr<Turtlebot> turtlebot;
         // std::unique_ptr<OrbTracker> orb_tracker;
 
-        
+
 
 };
 

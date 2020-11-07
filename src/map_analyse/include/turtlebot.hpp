@@ -34,7 +34,7 @@ class Turtlebot {
 
         /**
          * Returns the latest pose from the camera frame
-         */ 
+         */
         const geometry_msgs::PoseStamped& get_latest_camera_pose() const;
 
     private:

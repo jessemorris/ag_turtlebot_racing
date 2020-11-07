@@ -61,7 +61,7 @@ MapAnalyse::MapAnalyse(ros::NodeHandle& _nh):
 
 MapAnalyse::~MapAnalyse() {}
 
-geometry_msgs::PoseStamped MapAnalyse::get_turtlebot_pose(cv::Mat& src) {
+bool MapAnalyse::get_turtlebot_pose(cv::Mat& src, geometry_msgs::PoseStamped& pose_stamped) {
 
     cv::Mat dst = src.clone();
     cv::Mat hsv;
@@ -106,8 +106,8 @@ geometry_msgs::PoseStamped MapAnalyse::get_turtlebot_pose(cv::Mat& src) {
     // cv::bitwise_or(mask1, mask2, mask);
 
     //close small holes
-    cv::Mat morph_kernel_open = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3,3), cv::Point(-1,-1));
-    cv::Mat morph_kernel_close = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(11,11), cv::Point(-1,-1));
+    cv::Mat morph_kernel_open = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5,5), cv::Point(-1,-1));
+    cv::Mat morph_kernel_close = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(17,17), cv::Point(-1,-1));
 
     cv::morphologyEx(mask, mask, cv::MORPH_OPEN, morph_kernel_open);
     cv::morphologyEx(mask, mask, cv::MORPH_CLOSE, morph_kernel_close);
@@ -148,13 +148,14 @@ geometry_msgs::PoseStamped MapAnalyse::get_turtlebot_pose(cv::Mat& src) {
     cv::RNG rng(12345);
     cv::Scalar color = cv::Scalar(rng.uniform(0, 256), rng.uniform(0,256), rng.uniform(0,256) );
 
-    geometry_msgs::PoseStamped pose_stamped;
 
     std::vector<cv::Point2f> points_list;
     std::vector<cv::Vec4i> probalistic_lines;
     for (size_t i = 0; i < contours.size(); i++) {
 
         double area = cv::contourArea(contours[i]);
+        ROS_INFO_STREAM("area " << area);
+
 
         if (area > min_area) {
 
@@ -260,6 +261,7 @@ geometry_msgs::PoseStamped MapAnalyse::get_turtlebot_pose(cv::Mat& src) {
                 }
 
                 avg_line_value/= it.count;
+                ROS_INFO_STREAM("ag line value " << avg_line_value);
 
                 //for now just take if averages are over 150 pixels but this is pretty hacky
                 //as this does not guarantee 3 - will need to improve search aglrithm later
@@ -291,13 +293,14 @@ geometry_msgs::PoseStamped MapAnalyse::get_turtlebot_pose(cv::Mat& src) {
 
 
                 //two of the values should be the same so we can track if this is the one we've seen
-                std::vector<int> u_angles(3);
+                std::vector<int> u_angles;
                 // std::pair<cv::Point2f, cv::Point2f> direction_line;
                 std::pair<cv::Point2f, cv::Point2f> front_line;
                 for (std::pair<cv::Point2f, cv::Point2f>& line_points:u_pairs) {
                     // cv::line( dst, line_points.first, line_points.second, color,4);
                     //put everything in first quadrant
                     int angle_line = std::atan((line_points.second.y - line_points.first.y)/(line_points.second.x - line_points.first.x))*180.0/M_PI;
+                    ROS_INFO_STREAM("Angle Line: " << angle_line);
                     // if(std::find(u_angles.begin(), u_angles.end(), angle_line) != u_angles.end()) {
                     //     // direction_line = line_points;
                     //     ROS_INFO_STREAM(angle_line << " has been seen before");
@@ -309,23 +312,33 @@ geometry_msgs::PoseStamped MapAnalyse::get_turtlebot_pose(cv::Mat& src) {
                     //lets make them ints so we can compare
                     u_angles.push_back(angle_line);
                     // }
-
                 }
+
+
+                if(std::abs(u_angles[0]) == 45) {
+                    return false;
+                }
+
 
                 //lazy check
                 if (u_angles[0] == u_angles[2]) {
+                    ROS_INFO_STREAM("here0");
                     //u_angles[1] is the unique one
                     front_line = u_pairs[1];
                 }
                 else if (u_angles[1] == u_angles[2]){
+                    ROS_INFO_STREAM("here1");
                     //u_angles[0] is the unique one
                     front_line = u_pairs[0];
 
                 }
                 else {
+                    ROS_INFO_STREAM("here2");
                     //u_angles[2] is the unique one
                     front_line = u_pairs[2];
                 }
+
+                cv::line( dst, front_line.first, front_line.second, color,4);
 
                 //we actually just need the front line and the centoid and draw a line between the centroid and the middle of the midpoint
                 // cv::line( dst, front_line.first, front_line.second, color,10);
@@ -416,15 +429,20 @@ geometry_msgs::PoseStamped MapAnalyse::get_turtlebot_pose(cv::Mat& src) {
 
     //TODO analyse pose, convert to world frame
 
-    return pose_stamped;
+    return true;
 }
 
 
 void MapAnalyse::image_callback(const sensor_msgs::ImageConstPtr& msg) {
     cv_bridge::CvImagePtr cv_ptr = cv_bridge::toCvCopy(*msg, sensor_msgs::image_encodings::BGR8);
     cv::Mat image = cv_ptr->image;
+    geometry_msgs::PoseStamped pose;
 
-    auto pose = get_turtlebot_pose(image);
+    auto result = get_turtlebot_pose(image, pose);
+
+    if (!result) {
+        return;
+    }
 
     if (!turtlebot) {
         turtlebot = std::make_unique<Turtlebot>(pose);
@@ -432,5 +450,4 @@ void MapAnalyse::image_callback(const sensor_msgs::ImageConstPtr& msg) {
     else {
         turtlebot->update_pose_camera(pose);
     }
-
 }

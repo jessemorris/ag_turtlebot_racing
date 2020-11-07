@@ -29,5 +29,3 @@ void Turtlebot::update_pose_camera(geometry_msgs::PoseStamped& pose) {
 const geometry_msgs::PoseStamped& Turtlebot::get_latest_camera_pose() const {
     return camera_frame_history[camera_frame_history.size() - 1];
 }
-
-
