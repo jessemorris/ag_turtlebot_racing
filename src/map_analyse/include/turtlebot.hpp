@@ -50,9 +50,9 @@ class Turtlebot {
         //will eventually need some ros stuff here i think
 
         /**
-         * finds the standard deviation of the values in the pose array. Specifically the 
+         * finds the standard deviation of the values in the pose array. Specifically the
          */
-        bool filter_poses(geometry_msgs::PoseStamped& filtered_pose);
+        std::unique_ptr<geometry_msgs::PoseStamped> filter_poses();
 
 
 

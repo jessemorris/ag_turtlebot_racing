@@ -273,7 +273,7 @@ bool MapAnalyse::get_turtlebot_pose(cv::Mat& src, geometry_msgs::PoseStamped& po
                   std::pair<cv::Point2f, cv::Point2f> u_line(point1, point2);
                   back_line = u_line;
                 }
-                // ROS_INFO_STREAM(avg_line_value);
+                // ROS_INFO_STREAM(avg_line_valutf2_geometry_msgse);
 
 
 
