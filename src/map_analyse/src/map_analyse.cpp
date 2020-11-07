@@ -216,6 +216,13 @@ geometry_msgs::PoseStamped MapAnalyse::get_turtlebot_pose(cv::Mat& src) {
             cv::Point2f original_center = rotated_rec.center;
             cv::Size original_size(rotated_rec.size);
 
+            // int factor = 1.25;
+            // cv::Rect cropped_rect;
+            // cropped_rect.x = original_rect.x * factor;
+            // cropped_rect.y = original_rect.y * factor;
+            // cropped_rect.width = original_rect.width * factor;
+            // cropped_rect.height = original_rect.height * factor;
+
 
             cv::Size scaled_size(0.75*original_size.width,0.75*original_size.height);
             cv::RotatedRect scaled_rotated_rect(original_center,scaled_size,original_angle);
@@ -230,6 +237,7 @@ geometry_msgs::PoseStamped MapAnalyse::get_turtlebot_pose(cv::Mat& src) {
 
             //list of pairs identifying the points that make up the U on the turtlebot
             std::vector<std::pair<cv::Point2f, cv::Point2f>> u_pairs;
+            std::pair<cv::Point2f, cv::Point2f> back_line;
 
             //draw rotatedRect
             ROS_INFO_STREAM("line values");
@@ -240,7 +248,7 @@ geometry_msgs::PoseStamped MapAnalyse::get_turtlebot_pose(cv::Mat& src) {
                 // std::vector<cv::Vec3b> buf(it.count);
                 int avg_line_value = 0;
 
-                //iterate through each pixel in the line and find the average. If white -> add to u_pairs as part 
+                //iterate through each pixel in the line and find the average. If white -> add to u_pairs as part
                 //of U shape on turtlebot
                 for(int i = 0; i < it.count; i++, ++it) {
                     cv::Point pixel_location=  it.pos();
@@ -257,6 +265,10 @@ geometry_msgs::PoseStamped MapAnalyse::get_turtlebot_pose(cv::Mat& src) {
                 if (avg_line_value > 150) {
                     std::pair<cv::Point2f, cv::Point2f> u_line(point1, point2);
                     u_pairs.push_back(u_line);
+                }
+                else {
+                  std::pair<cv::Point2f, cv::Point2f> u_line(point1, point2);
+                  back_line = u_line;
                 }
                 // ROS_INFO_STREAM(avg_line_value);
 
@@ -287,7 +299,7 @@ geometry_msgs::PoseStamped MapAnalyse::get_turtlebot_pose(cv::Mat& src) {
                     // if(std::find(u_angles.begin(), u_angles.end(), angle_line) != u_angles.end()) {
                     //     // direction_line = line_points;
                     //     ROS_INFO_STREAM(angle_line << " has been seen before");
-                    // } 
+                    // }
                     // else {
                     //     ROS_INFO_STREAM(angle_line << " has not been seen before");
                     //     front_line = line_points;
@@ -314,19 +326,36 @@ geometry_msgs::PoseStamped MapAnalyse::get_turtlebot_pose(cv::Mat& src) {
                 }
 
                 //we actually just need the front line and the centoid and draw a line between the centroid and the middle of the midpoint
-                cv::line( dst, front_line.first, front_line.second, color,10);
-                float center_x = std::abs(front_line.first.x - front_line.second.x)/2.0;  
-                float center_y = std::abs(front_line.first.y - front_line.second.y)/2.0;  
+                // cv::line( dst, front_line.first, front_line.second, color,10);
+                // cv::line( dst, back_line.first, back_line.second, cv::Scalar(0,0,255),10);
+                // float min_x_front = std::min(front_line.first.x, front_line.second.x);
+                // float min_y_front = std::min(front_line.first.y, front_line.second.y);
+                float center_x_front = std::abs(front_line.first.x + front_line.second.x)/2.0;
+                float center_y_front = std::abs(front_line.first.y + front_line.second.y)/2.0;
+                cv::Point diff = front_line.first - front_line.second;
+                int euclid_front =  cv::sqrt(diff.x*diff.x + diff.y*diff.y);
 
-                cv::Point2f end_of_arrow(center_y, center_x);
-                cv::Point2f start_of_arrow =  centroids[i];
-                cv::arrowedLine(dst, start_of_arrow, end_of_arrow, color, 20);
 
+                // float min_x_back = std::min(back_line.first.x, back_line.second.x);
+                // float min_y_back = std::min(back_line.first.y, back_line.second.y);
+                float center_x_back = std::abs(back_line.first.x + back_line.second.x)/2.0;
+                float center_y_back = std::abs(back_line.first.y + back_line.second.y)/2.0;
+                diff = back_line.first - back_line.second;
+                int euclid_back =  cv::sqrt(diff.x*diff.x + diff.y*diff.y);
 
+                if(euclid_front == 0 || euclid_back == 0) {
+                    ROS_WARN_STREAM("Euclid distances were 0!");
+                }
+                else {
 
+                  cv::Point2f start_of_arrow(center_x_back, center_y_back);
 
+                  cv::Point2f end_of_arrow(center_x_front, center_y_front);
+                  // cv::Point2f start_of_arrow =  centroids[i];
+                  cv::arrowedLine(dst, start_of_arrow, end_of_arrow, color, 20);
+
+                }
             }
-
         }
     }
 
@@ -347,6 +376,7 @@ geometry_msgs::PoseStamped MapAnalyse::get_turtlebot_pose(cv::Mat& src) {
     image_mask_pub.publish(img_mask_msg);
 
     geometry_msgs::PoseStamped pose;
+
 
     //TODO analyse pose, convert to world frame
 
