@@ -154,7 +154,7 @@ bool MapAnalyse::get_turtlebot_pose(cv::Mat& src, geometry_msgs::PoseStamped& po
     for (size_t i = 0; i < contours.size(); i++) {
 
         double area = cv::contourArea(contours[i]);
-        ROS_INFO_STREAM("area " << area);
+        // ROS_INFO_STREAM("area " << area);
 
 
         if (area > min_area) {
@@ -242,7 +242,7 @@ bool MapAnalyse::get_turtlebot_pose(cv::Mat& src, geometry_msgs::PoseStamped& po
             std::pair<cv::Point2f, cv::Point2f> back_line;
 
             //draw rotatedRect
-            ROS_INFO_STREAM("line values");
+            // ROS_INFO_STREAM("line values");
             for (int j = 0; j < 4; j++) {
                 cv::Point2f point1 = rect_points[j];
                 cv::Point2f point2 = rect_points[(j+1)%4];
@@ -261,7 +261,7 @@ bool MapAnalyse::get_turtlebot_pose(cv::Mat& src, geometry_msgs::PoseStamped& po
                 }
 
                 avg_line_value/= it.count;
-                ROS_INFO_STREAM("ag line value " << avg_line_value);
+                // ROS_INFO_STREAM("ag line value " << avg_line_value);
 
                 //for now just take if averages are over 150 pixels but this is pretty hacky
                 //as this does not guarantee 3 - will need to improve search aglrithm later
@@ -300,7 +300,7 @@ bool MapAnalyse::get_turtlebot_pose(cv::Mat& src, geometry_msgs::PoseStamped& po
                     // cv::line( dst, line_points.first, line_points.second, color,4);
                     //put everything in first quadrant
                     int angle_line = std::atan((line_points.second.y - line_points.first.y)/(line_points.second.x - line_points.first.x))*180.0/M_PI;
-                    ROS_INFO_STREAM("Angle Line: " << angle_line);
+                    // ROS_INFO_STREAM("Angle Line: " << angle_line);
                     // if(std::find(u_angles.begin(), u_angles.end(), angle_line) != u_angles.end()) {
                     //     // direction_line = line_points;
                     //     ROS_INFO_STREAM(angle_line << " has been seen before");
@@ -322,18 +322,18 @@ bool MapAnalyse::get_turtlebot_pose(cv::Mat& src, geometry_msgs::PoseStamped& po
 
                 //lazy check
                 if (u_angles[0] == u_angles[2]) {
-                    ROS_INFO_STREAM("here0");
+                    // ROS_INFO_STREAM("here0");
                     //u_angles[1] is the unique one
                     front_line = u_pairs[1];
                 }
                 else if (u_angles[1] == u_angles[2]){
-                    ROS_INFO_STREAM("here1");
+                    // ROS_INFO_STREAM("here1");
                     //u_angles[0] is the unique one
                     front_line = u_pairs[0];
 
                 }
                 else {
-                    ROS_INFO_STREAM("here2");
+                    // ROS_INFO_STREAM("here2");
                     //u_angles[2] is the unique one
                     front_line = u_pairs[2];
                 }
@@ -381,23 +381,23 @@ bool MapAnalyse::get_turtlebot_pose(cv::Mat& src, geometry_msgs::PoseStamped& po
 
                     else if (x_val < 0 && y_val < 0) {
                         theta = std::atan(abs(y_val/x_val));
-                        ROS_INFO_STREAM("\n4\n");
+                        // ROS_INFO_STREAM("\n4\n");
                     }
 
                     else if (x_val > 0 && y_val < 0.1) {
                         theta = M_PI - std::atan(abs(y_val/x_val));
-                        ROS_INFO_STREAM("theta 2: " << theta);
+                        // ROS_INFO_STREAM("theta 2: " << theta);
 
                     }
 
                     else if (x_val > 0 && y_val > 0.1) {
                         theta = std::atan(abs(y_val/x_val)) + M_PI;
-                        ROS_INFO_STREAM("theta 1: " << theta);
+                        // ROS_INFO_STREAM("theta 1: " << theta);
                     }
 
                     else if (x_val < 0 && y_val > 0) {
                         theta = 2*M_PI - std::atan(abs(y_val/x_val));
-                        ROS_INFO_STREAM("\n3\n");
+                        // ROS_INFO_STREAM("\n3\n");
                     }
 
                     float centre_x = (center_x_front + center_x_back)/2.0;

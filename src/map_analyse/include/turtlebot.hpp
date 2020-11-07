@@ -23,7 +23,7 @@ class Turtlebot {
 
 
     public:
-        Turtlebot(ros::NodeHandle& _nh, const geometry_msgs::PoseStamped& _inital_pose, int _history_size = 5);
+        Turtlebot(ros::NodeHandle& _nh, const geometry_msgs::PoseStamped& _inital_pose, int _history_size = 20);
         ~Turtlebot() {}
 
         /**
@@ -48,6 +48,11 @@ class Turtlebot {
         std::vector<geometry_msgs::PoseStamped> camera_frame_history;
         const geometry_msgs::PoseStamped& inital_pose_camera;
         //will eventually need some ros stuff here i think
+
+        /**
+         * finds the standard deviation of the values in the pose array. Specifically the 
+         */
+        bool filter_poses(geometry_msgs::PoseStamped& filtered_pose);
 
 
 
