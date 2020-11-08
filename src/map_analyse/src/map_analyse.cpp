@@ -22,6 +22,9 @@
 
 #include "map_analyse.hpp"
 
+#define CAMERA_WIDTH_NORM 6.4
+#define CAMERA_HEIGHT_NORM 4.8
+
 
 MapAnalyse::MapAnalyse(ros::NodeHandle& _nh):
         nh(_nh),
@@ -53,8 +56,28 @@ MapAnalyse::MapAnalyse(ros::NodeHandle& _nh):
 
         // orb_tracker = std::make_unique<OrbTracker>("/home/jesse//Code/src/ar_turtlebot_racing/src/map_analyse/config/turtlebot_pose.png");
 
+        // int rot_matrix[3][3] = [1 0 0 ; 0 -1 0 ; 0 0 -1];
+
+        //roll around y axis to match camera frame coordinates in the top left
+        tf2::Quaternion q;
+        q.setRPY(0, -M_PI, 0);
 
 
+        geometry_msgs::TransformStamped transform;
+        transform.header.stamp = ros::Time::now();
+        transform.header.frame_id = "/map";
+        transform.child_frame_id = "/turtlebot_image_frame";
+
+        transform.transform.translation.x = -CAMERA_WIDTH_NORM/2.0;
+        transform.transform.translation.y = -CAMERA_HEIGHT_NORM/2.0;
+        transform.transform.translation.z = 0;
+
+        transform.transform.rotation.x = q.x();
+        transform.transform.rotation.y = q.y();
+        transform.transform.rotation.z = q.z();
+        transform.transform.rotation.w = q.w();
+
+        static_broadcster.sendTransform(transform);
 
 
     }

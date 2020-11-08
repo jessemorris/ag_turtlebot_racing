@@ -146,7 +146,7 @@ std::unique_ptr<geometry_msgs::PoseStamped> Turtlebot::filter_poses(double x_ave
     average_pose->pose.position.z = 0;
 
     std_msgs::Header header;
-    header.frame_id = "/map";
+    header.frame_id = "/turtlebot_image_frame";
     header.stamp = ros::Time::now();
 
     average_pose->header = header;
@@ -180,6 +180,7 @@ tf2::Quaternion average_quaternion(Vec4d& cumulative, tf2::Quaternion& newRotati
 
 		newRotation = inverse_sign_quaternion(newRotation);
 	}
+
 
 	//Average the values
 	float addDet = 1.0f/(float)addAmount;

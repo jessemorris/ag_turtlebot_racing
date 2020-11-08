@@ -14,6 +14,8 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/core/cvstd.hpp>
 #include <image_transport/image_transport.h>
+#include <tf2_ros/static_transform_broadcaster.h>
+#include <geometry_msgs/TransformStamped.h>
 #include <iostream>
 #include <stdio.h>
 
@@ -60,6 +62,8 @@ class MapAnalyse {
 
         std::unique_ptr<Turtlebot> turtlebot;
         // std::unique_ptr<OrbTracker> orb_tracker;
+
+        tf2_ros::StaticTransformBroadcaster static_broadcster;
 
 
 
