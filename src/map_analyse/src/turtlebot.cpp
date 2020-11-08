@@ -29,9 +29,9 @@ struct Vec4d {
 };
 
 
-tf::Quaternion inverse_sign_quaternion(tf::Quaternion& q);
-bool are_quats_close(tf::Quaternion& q1, tf::Quaternion& q2);
-tf::Quaternion average_quaternion(Vec4d& cumulative, tf::Quaternion& newRotation, tf::Quaternion& firstRotation, int addAmount);
+tf2::Quaternion inverse_sign_quaternion(tf2::Quaternion& q);
+bool are_quats_close(tf2::Quaternion& q1, tf2::Quaternion& q2);
+tf2::Quaternion average_quaternion(Vec4d& cumulative, tf2::Quaternion& newRotation, tf2::Quaternion& firstRotation, int addAmount);
 
 
 
@@ -73,14 +73,16 @@ std::unique_ptr<geometry_msgs::PoseStamped> Turtlebot::filter_poses() {
         return nullptr;
     }
     //get first quat for averaging. This may be problem if the first one is bad
-    tf::Quaternion quat_first;
-    tf::quaternionMsgToTF(camera_frame_history[0].pose.orientation, quat_first);
+    tf2::Quaternion quat_first;
+    // tf2::quaternionMsgToTF(camera_frame_history[0].pose.orientation, quat_first);
+    tf2::convert(camera_frame_history[0].pose.orientation, quat_first);
 
     ROS_INFO_STREAM("averaging " << camera_frame_history.size() << " poses");
     //get averages
     for(auto& pose :camera_frame_history) {
-        tf::Quaternion quat;
-        tf::quaternionMsgToTF(pose.pose.orientation, quat);
+        tf2::Quaternion quat;
+        // tf2::quaternionMsgToTF(pose.pose.orientation, quat);
+        tf2::convert(pose.pose.orientation, quat);
 
         //if averaging quats dont work we can just average yaw
         // double roll, pitch, yaw;
@@ -95,9 +97,9 @@ std::unique_ptr<geometry_msgs::PoseStamped> Turtlebot::filter_poses() {
     }
 
     //we have now averaged the quaternions so this should now be the average yaw
-    tf::Quaternion quat_cumulative(vec.x, vec.y, vec.z, vec.w);
+    tf2::Quaternion quat_cumulative(vec.x, vec.y, vec.z, vec.w);
     double roll, pitch, average_yaw;
-    tf::Matrix3x3(quat_cumulative).getRPY(roll, pitch, average_yaw);
+    tf2::Matrix3x3(quat_cumulative).getRPY(roll, pitch, average_yaw);
 
     x_average/=camera_frame_history.size();
     y_average/=camera_frame_history.size();
@@ -136,7 +138,7 @@ const geometry_msgs::PoseStamped& Turtlebot::get_latest_camera_pose() const {
 //some code to help with Quaternions
 //http://wiki.unity3d.com/index.php/Averaging_Quaternions_and_Vectors
 
-tf::Quaternion average_quaternion(Vec4d& cumulative, tf::Quaternion& newRotation, tf::Quaternion& firstRotation, int addAmount){
+tf2::Quaternion average_quaternion(Vec4d& cumulative, tf2::Quaternion& newRotation, tf2::Quaternion& firstRotation, int addAmount){
 
 	float w = 0.0f;
 	float x = 0.0f;
@@ -163,17 +165,17 @@ tf::Quaternion average_quaternion(Vec4d& cumulative, tf::Quaternion& newRotation
 
 	//note: if speed is an issue, you can skip the normalization step
 	// return NormalizeQuaternion(x, y, z, w);
-    return tf::Quaternion(x, y, z, w);
+    return tf2::Quaternion(x, y, z, w);
 
 }
 
 //Changes the sign of the quaternion components. This is not the same as the inverse.
-tf::Quaternion inverse_sign_quaternion(tf::Quaternion& q){
+tf2::Quaternion inverse_sign_quaternion(tf2::Quaternion& q){
 
-	return tf::Quaternion(-q.x(), -q.y(), -q.z(), -q.w());
+	return tf2::Quaternion(-q.x(), -q.y(), -q.z(), -q.w());
 }
 
-bool are_quats_close(tf::Quaternion& q1, tf::Quaternion& q2){
+bool are_quats_close(tf2::Quaternion& q1, tf2::Quaternion& q2){
 
 	float dot = q1.dot(q2);
 
