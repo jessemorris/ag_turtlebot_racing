@@ -21,13 +21,6 @@
 
 #include "turtlebot.hpp"
 
-struct Vec4d {
-    double x;
-    double y;
-    double z;
-    double w;
-};
-
 
 tf2::Quaternion inverse_sign_quaternion(tf2::Quaternion& q);
 bool are_quats_close(tf2::Quaternion& q1, tf2::Quaternion& q2);
@@ -50,10 +43,14 @@ void Turtlebot::update_pose_camera(geometry_msgs::PoseStamped& pose) {
         camera_frame_history.erase(camera_frame_history.begin());
     }
 
+    double x_average, y_average;
+    Vec4d vec = {0.0, 0.0, 0.0, 0.0};
+    compute_average_pose(x_average, y_average, vec);
+
     geometry_msgs::PoseStamped pose_filtered;
     camera_frame_history.push_back(pose);
 
-    std::unique_ptr<geometry_msgs::PoseStamped> filtered_pose = filter_poses();
+    std::unique_ptr<geometry_msgs::PoseStamped> filtered_pose = filter_poses(x_average, y_average, vec);
 
     if(filtered_pose) {
         camera_frame_odom_pub.publish(*filtered_pose);
@@ -61,16 +58,12 @@ void Turtlebot::update_pose_camera(geometry_msgs::PoseStamped& pose) {
 
 }
 
-std::unique_ptr<geometry_msgs::PoseStamped> Turtlebot::filter_poses() {
+bool Turtlebot::compute_average_pose(double& x_average, double& y_average, Vec4d& quat_average) {
 
-    double yaw_average;
-    double x_average;
-    double y_average;
 
-    Vec4d vec = {0.0, 0.0, 0.0, 0.0};
 
     if (camera_frame_history.size() < 2) {
-        return nullptr;
+        return false;
     }
     //get first quat for averaging. This may be problem if the first one is bad
     tf2::Quaternion quat_first;
@@ -88,7 +81,7 @@ std::unique_ptr<geometry_msgs::PoseStamped> Turtlebot::filter_poses() {
         // double roll, pitch, yaw;
         // tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
 
-        average_quaternion(vec, quat, quat_first, camera_frame_history.size());
+        average_quaternion(quat_average, quat, quat_first, camera_frame_history.size());
 
         // yaw_average += yaw;
         x_average += pose.pose.position.x;
@@ -97,37 +90,73 @@ std::unique_ptr<geometry_msgs::PoseStamped> Turtlebot::filter_poses() {
     }
 
     //we have now averaged the quaternions so this should now be the average yaw
-    tf2::Quaternion quat_cumulative(vec.x, vec.y, vec.z, vec.w);
-    double roll, pitch, average_yaw;
-    tf2::Matrix3x3(quat_cumulative).getRPY(roll, pitch, average_yaw);
+    // tf2::Quaternion quat_cumulative(vec.x, vec.y, vec.z, vec.w);
+    // double roll, pitch;
+    // tf2::Matrix3x3(quat_cumulative).getRPY(roll, pitch, yaw_average);
 
     x_average/=camera_frame_history.size();
     y_average/=camera_frame_history.size();
 
-    ROS_INFO_STREAM("average " << x_average << "  "  << y_average << " " << average_yaw);
 
-    std::unique_ptr<geometry_msgs::PoseStamped> pose_stamped = std::make_unique<geometry_msgs::PoseStamped>();
+    //
+    return true;
+
+    // std::unique_ptr<geometry_msgs::PoseStamped> average_pose = std::make_unique<geometry_msgs::PoseStamped>();
+    //
+    // geometry_msgs::Quaternion ori;
+    // tf2::convert(quat_cumulative, ori);
+    //
+    // pose_stamped->pose.orientation = ori;
+    //
+    //
+    // pose_stamped->pose.position.x = x_average;
+    // pose_stamped->pose.position.y = y_average;
+    // pose_stamped->pose.position.z = 0;
+    //
+    // std_msgs::Header header;
+    // header.frame_id = "/map";
+    // header.stamp = ros::Time::now();
+    //
+    // pose_stamped->header = header;
+    //
+    //
+    // return pose_stamped;
+
+}
+
+std::unique_ptr<geometry_msgs::PoseStamped> Turtlebot::filter_poses(double x_average, double y_average, const Vec4d& vec) {
+
+    tf2::Quaternion quat_cumulative(vec.x, vec.y, vec.z, vec.w);
+    double roll, pitch, yaw_average;
+    tf2::Matrix3x3(quat_cumulative).getRPY(roll, pitch, yaw_average);
+
+    ROS_INFO_STREAM("average " << x_average << "  "  << y_average << " " << yaw_average);
+
+    std::unique_ptr<geometry_msgs::PoseStamped> average_pose = std::make_unique<geometry_msgs::PoseStamped>();
+
 
     geometry_msgs::Quaternion ori;
     tf2::convert(quat_cumulative, ori);
 
-    pose_stamped->pose.orientation = ori;
+    average_pose->pose.orientation = ori;
 
 
-    pose_stamped->pose.position.x = x_average;
-    pose_stamped->pose.position.y = y_average;
-    pose_stamped->pose.position.z = 0;
+    average_pose->pose.position.x = x_average;
+    average_pose->pose.position.y = y_average;
+    average_pose->pose.position.z = 0;
 
     std_msgs::Header header;
     header.frame_id = "/map";
     header.stamp = ros::Time::now();
 
-    pose_stamped->header = header;
+    average_pose->header = header;
 
 
-    return pose_stamped;
+    return average_pose;
 
 }
+
+
 
 const geometry_msgs::PoseStamped& Turtlebot::get_latest_camera_pose() const {
     return camera_frame_history[camera_frame_history.size() - 1];

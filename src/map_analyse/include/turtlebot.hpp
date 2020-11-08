@@ -19,6 +19,14 @@
 #include <vector>
 #include <string>
 
+struct Vec4d {
+    double x;
+    double y;
+    double z;
+    double w;
+};
+
+
 class Turtlebot {
 
 
@@ -52,7 +60,9 @@ class Turtlebot {
         /**
          * finds the standard deviation of the values in the pose array. Specifically the
          */
-        std::unique_ptr<geometry_msgs::PoseStamped> filter_poses();
+        bool compute_average_pose(double& x_average, double& y_average, Vec4d& quat_average);
+        // bool compute_standard_deviation(double x_average, double y_average, double&yaw_average)
+        std::unique_ptr<geometry_msgs::PoseStamped> filter_poses(double x_average, double y_average, const Vec4d& vec);
 
 
 
