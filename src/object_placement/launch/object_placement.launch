@@ -1,0 +1,18 @@
+<launch>
+
+    <arg name="config_file" default="object_placement_config.yaml"/>
+
+    <!-- <node pkg="object_placement" type="object_placement_node" name="object_placement" output="screen"> -->
+    <node name="object_placement" pkg="object_placement" type="main.py" output="screen">
+    <rosparam command="load" file="$(find object_placement)/config/$(arg config_file)"/>
+
+    <!-- set a private parameter for the node -->
+    <!-- <param name="input_camera_topic" value="/psmove/camera/raw_image"/> -->
+    <!-- when using the rpi camera -->
+
+    <param name="input_camera_topic" value="/raspicam_node/image"/>
+
+
+    </node>
+
+</launch>

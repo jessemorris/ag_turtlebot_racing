@@ -1,0 +1,7 @@
+object_placement
+/home/talin/ar_turtlebot_racing/devel/.private/object_placement/cmake.lock /home/talin/ar_turtlebot_racing/devel/./cmake.lock
+/home/talin/ar_turtlebot_racing/devel/.private/object_placement/lib/python2.7/dist-packages/object_placement/__init__.py /home/talin/ar_turtlebot_racing/devel/lib/python2.7/dist-packages/object_placement/__init__.py
+/home/talin/ar_turtlebot_racing/devel/.private/object_placement/lib/pkgconfig/object_placement.pc /home/talin/ar_turtlebot_racing/devel/lib/pkgconfig/object_placement.pc
+/home/talin/ar_turtlebot_racing/devel/.private/object_placement/lib/object_placement/object_placement_node /home/talin/ar_turtlebot_racing/devel/lib/object_placement/object_placement_node
+/home/talin/ar_turtlebot_racing/devel/.private/object_placement/share/object_placement/cmake/object_placementConfig-version.cmake /home/talin/ar_turtlebot_racing/devel/share/object_placement/cmake/object_placementConfig-version.cmake
+/home/talin/ar_turtlebot_racing/devel/.private/object_placement/share/object_placement/cmake/object_placementConfig.cmake /home/talin/ar_turtlebot_racing/devel/share/object_placement/cmake/object_placementConfig.cmake
