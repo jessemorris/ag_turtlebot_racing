@@ -14,19 +14,27 @@ find_package(catkin REQUIRED COMPONENTS
 	image_transport
 	std_msgs
 	cv_bridge
-	sensor_msgs)
+	sensor_msgs
+	#open3d_conversions
+	)
 
 find_package(OpenCV)
 find_package(Eigen3 REQUIRED)
 find_package(PCL REQUIRED)
+find_package(Open3D REQUIRED)
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${Open3D_C_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Open3D_CXX_FLAGS}")
+link_directories(${Open3D_LIBRARY_DIRS})
 
 ## Setup include directories
 include_directories(
 	${catkin_INCLUDE_DIRS},
 #  include/${PROJECT_NAME}
   include
-   ${PCL_INCLUDE_DIRS})
+   ${PCL_INCLUDE_DIRS}
+   ${Open3D_INCLUDE_DIRS}
+)
 
 catkin_package(
   LIBRARIES ${PROJECT_NAME}
@@ -40,7 +48,9 @@ catkin_package(
 	nav_msgs
 	sensor_msgs
 	cv_bridge
+	#open3d_conversions
 )
+
 
 
 
@@ -144,17 +154,21 @@ catkin_package(
 ## Build ##
 ###########
 
-
+message("opengl include ${OPENGL_INCLUDE_DIRS}")
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
     include
     ${catkin_INCLUDE_DIRS}
+	${Open3D_INCLUDE_DIRS}
 )
 
 
 add_executable(${PROJECT_NAME}_node
 		src/main.cpp
+		src/mesh_builder.cpp
+		#src/opengl.cpp
+		#src/glad.c
 		
 )
 
@@ -164,7 +178,9 @@ target_link_libraries(${PROJECT_NAME}_node
 		${catkin_LIBRARIES}
 		${OpenCV_LIBS}
 		${PCL_LIBRARIES}
+		#${OPENGL_LIBRARIES}
 		Eigen3::Eigen
+		${Open3D_LIBRARIES}
 )
 
 if(catkin_EXPORTED_LIBRARIES)
