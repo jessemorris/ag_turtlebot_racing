@@ -180,7 +180,7 @@ target_link_libraries(${PROJECT_NAME}_node
 		${PCL_LIBRARIES}
 		#${OPENGL_LIBRARIES}
 		Eigen3::Eigen
-		${Open3D_LIBRARIES}
+		#${Open3D_LIBRARIES}
 )
 
 if(catkin_EXPORTED_LIBRARIES)
