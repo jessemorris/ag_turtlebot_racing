@@ -41,6 +41,7 @@
 #include <pcl/console/print.h>
 #include <pcl/console/parse.h>
 #include <pcl/console/time.h>
+#include <vtkWindowToImageFilter.h>
 
 #include <pcl/range_image/range_image.h>
 
@@ -84,6 +85,9 @@
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/algorithm.hpp>
 #include <boost/thread/thread.hpp>
+
+#include <vtkSmartPointer.h>
+
 
 #include <iostream>
 #include <fstream>
@@ -528,7 +532,7 @@ if (true)
     //                     Eigen::Affine3f (point_cloud.sensor_orientation_);
     scene_sensor_pose = Eigen::Affine3f (Eigen::Translation3f (point_cloud.sensor_origin_[0] ,
                                                              point_cloud.sensor_origin_[1],
-                                                             point_cloud.sensor_origin_[2])) *
+                                                             point_cloud.sensor_origin_[2] - 1)) *
                         Eigen::Affine3f (Eigen::AngleAxisf(M_PI/2.0, Eigen::Vector3f::UnitZ()));
   }
   // else
@@ -590,7 +594,10 @@ if (true)
 
   mesh_viewer.addPolygonMesh(output, "polygon");
   mesh_viewer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_SHADING,
-                                        pcl::visualization::PCL_VISUALIZER_SHADING_FLAT, "polygon");
+                                            pcl::visualization::PCL_VISUALIZER_SHADING_FLAT, "polygon");
+   
+  mesh_viewer.addCoordinateSystem (1.0f, "global");
+
   mesh_viewer.initCameraParameters ();
   setViewerPose(mesh_viewer, range_image.getTransformationToWorldSystem ());
 
@@ -621,6 +628,19 @@ if (true)
     if (live_update)
     {
       scene_sensor_pose = viewer.getViewerPose();
+      vtkSmartPointer< vtkRenderWindow> vtk_render = mesh_viewer.getRenderWindow();
+      // vtk_render->GetRGBAPixelData(0, 0, 640, 460, 1);
+      vtk_render->SetOffScreenRendering(1);
+      vtkSmartPointer<vtkWindowToImageFilter> windowToImageFilter = vtkSmartPointer<vtkWindowToImageFilter>::New();
+      windowToImageFilter->SetInput(vtk_render);
+      windowToImageFilter->Update();
+      vtkSmartPointer<vtkImageData> image_data = windowToImageFilter->GetOutput();
+
+      int* dims = image_data->GetDimensions();
+
+      // unsigned char* image_data_array = static_cast<unsigned char*>(image_data->GetScalarPointer(0,0,0));
+
+
       //can trt createFromPointCloudWithKnownSize()
       range_image.createFromPointCloud (point_cloud, angular_resolution_x, angular_resolution_y,
                                         pcl::deg2rad (360.0f), pcl::deg2rad (360.0f),
@@ -649,12 +669,46 @@ if (true)
 
         //     }
         // }
-        cv::Mat image(range_image.height,range_image.width,CV_8UC3,&rgb_image[0]);
+        // cv::Mat image(range_image.height,range_image.width,CV_8UC3,&image_data_array[0]);
+        int numberOfImageChannels = image_data->GetNumberOfScalarComponents();
+        int imageWidth = dims[0];
+        int imageHeight = dims[1];
+        int cvType = 0;
+        ROS_INFO_STREAM("number of image channels " << numberOfImageChannels);
+        switch(numberOfImageChannels){
+          case 1: cvType = CV_8UC1; break;
+          case 3: cvType = CV_8UC3; break;
+          case 4: cvType = CV_8UC4; break;
+          default: std::cerr << "Check number of vtk image channels!" << std::endl;
+        }
+        auto image = cv::Mat(dims[0], dims[1], cvType);
+        // Loop over the vtkImageData contents.
+        for ( int heightPos = 0; heightPos < imageHeight; heightPos++ ){
+          for ( int widthPos = 0; widthPos < imageWidth; widthPos++ ){
+            auto pixel = static_cast<unsigned char *>(image_data->GetScalarPointer(widthPos, heightPos, 0));
+            image.at<unsigned char>(heightPos, widthPos) = *pixel;
+          }
+        }
+        ROS_INFO_STREAM(dims[0] << " " <<dims[1]);
+        // unsigned char* data = static_cast<unsigned char*>(image_data->GetScalarPointer());
+        // cv::Mat image(dims[0], dims[1], CV_8UC4, static_cast<unsigned char*>(image_data->GetScalarPointer()));
+
+        // cv::cvtColor(image, image, CV_BGRA2RGB);
+
+        cv::flip(image,image, 0);
+
+        // Flip because of different origins between vtk and OpenCV
+        // cv::flip(openCVImage,openCVImage, 0);
+
+        // cv::Mat image(image_data.,range_image.width,CV_8UC3,&image_data_array[0]);
         img_msg = cv_bridge::CvImage(std_msgs::Header(), "rgb8", image).toImageMsg();
         pub_img.publish(img_msg);
         ros::spinOnce();
         ROS_INFO_STREAM(image.rows << " " << image.cols);
         delete[] ranges;
+        // delete[] data;
+        // delete[] dims;
+
         // cv::imshow("frame", image);
         // cv::waitKey(1);
     //   range_image_widget.showRangeImage (range_image);
