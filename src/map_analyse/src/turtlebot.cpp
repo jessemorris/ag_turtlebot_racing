@@ -179,7 +179,7 @@ tf2::Quaternion average_quaternion(Vec4d& cumulative, tf2::Quaternion& newRotati
 
 	//Before we add the new rotation to the average (mean), we have to check whether the quaternion has to be inverted. Because
 	//q and -q are the same rotation, but cannot be averaged, we have to make sure they are all the same.
-	if(!are_quats_close(newRotation, firstRotation)){
+	if(are_quats_close(newRotation, firstRotation)){
 
 		newRotation = inverse_sign_quaternion(newRotation);
 	}
@@ -213,12 +213,10 @@ bool are_quats_close(tf2::Quaternion& q1, tf2::Quaternion& q2){
 	float dot = q1.dot(q2);
 
 	if(dot < 0.0f){
-
-		return false;
-	}
-
-	else{
-
 		return true;
+	}
+    
+	else{
+		return false;
 	}
 }
