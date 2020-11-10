@@ -37,7 +37,10 @@ Turtlebot::Turtlebot(ros::NodeHandle& _nh, const geometry_msgs::PoseStamped& _in
         camera_frame_odom_pub = nh.advertise<geometry_msgs::PoseStamped>("turtlebot_pose", 1000);
     }
 
+
 void Turtlebot::update_pose_camera(geometry_msgs::PoseStamped& pose) {
+
+    // Keep vector of PoseStamped to size 20
     if (camera_frame_history.size() >= history_size) {
         //remove the first element
         camera_frame_history.erase(camera_frame_history.begin());
