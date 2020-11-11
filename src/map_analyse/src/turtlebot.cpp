@@ -215,7 +215,8 @@ tf2::Quaternion average_quaternion(Vec4d& cumulative, tf2::Quaternion& newRotati
     //
     // float std_val = 2.0;
     //
-    // if (sum_w*std_val< 0  - newRotation.w()  || sum_x*std_val - newRotation.x() < 0 || sum_y*std_val - newRotation.y() < 0 || sum_z*std_val - newRotation.z() < 0  ) {
+    // if (sum_w*std_val< 0  - newRotation.w()  || sum_x*std_val - newRotation.x() < 0 
+    //     || sum_y*std_val - newRotation.y() < 0 || sum_z*std_val - newRotation.z() < 0  ) {
     //
     //     // frame_history.pop_back();
     // }

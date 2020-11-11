@@ -68,7 +68,9 @@ MapAnalyse::MapAnalyse(ros::NodeHandle& _nh):
         transform.header.frame_id = "/map";
         transform.child_frame_id = "/turtlebot_image_frame";
 
-        transform.transform.translation.x = -CAMERA_WIDTH_NORM/2.0;
+        ROS_INFO_STREAM("new thing here\n");
+
+        transform.transform.translation.x = CAMERA_WIDTH_NORM/2.0;
         transform.transform.translation.y = -CAMERA_HEIGHT_NORM/2.0;
         transform.transform.translation.z = 0;
 
