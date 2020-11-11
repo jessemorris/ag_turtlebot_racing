@@ -130,10 +130,16 @@ bool MapAnalyse::get_turtlebot_pose(cv::Mat& src, geometry_msgs::PoseStamped& po
 
     //close small holes
     cv::Mat morph_kernel_open = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5,5), cv::Point(-1,-1));
-    cv::Mat morph_kernel_close = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(17,17), cv::Point(-1,-1));
+    cv::Mat morph_kernel_close = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(1,1), cv::Point(-1,-1));
+    cv::Mat morph_kernel_open_last = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(15,15), cv::Point(-1,-1));
+
 
     cv::morphologyEx(mask, mask, cv::MORPH_OPEN, morph_kernel_open);
     cv::morphologyEx(mask, mask, cv::MORPH_CLOSE, morph_kernel_close);
+    cv::morphologyEx(mask, mask, cv::MORPH_OPEN, morph_kernel_open_last);
+
+
+
 
     // cv::Mat hit_miss_kernal = (cv::Mat_<int>(3, 3) <<
     //     0, 1, 0,

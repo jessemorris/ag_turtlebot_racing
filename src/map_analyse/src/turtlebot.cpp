@@ -215,23 +215,25 @@ tf2::Quaternion average_quaternion(Vec4d& cumulative, tf2::Quaternion& newRotati
 
     if (sum_w*std_val< 0  - newRotation.w()  || sum_x*std_val - newRotation.x() < 0 || sum_y*std_val - newRotation.y() < 0 || sum_z*std_val - newRotation.z() < 0  ) {
 
-        frame_history.pop_back();
+        // frame_history.pop_back();
     }
 
-	// //Average the values
-	// float addDet = 1.0f/(float)addAmount;
-	// cumulative.w += newRotation.w();
-	// w = cumulative.w * addDet;
-	// cumulative.x += newRotation.x();
-	// x = cumulative.x * addDet;
-	// cumulative.y += newRotation.y();
-	// y = cumulative.y * addDet;
-	// cumulative.z += newRotation.z();
-	// z = cumulative.z * addDet;
+	//Average the values
+	float addDet = 1.0f/(float)addAmount;
+	cumulative.w += newRotation.w();
+	float w = cumulative.w * addDet;
+	cumulative.x += newRotation.x();
+	float x = cumulative.x * addDet;
+	cumulative.y += newRotation.y();
+	float y = cumulative.y * addDet;
+	cumulative.z += newRotation.z();
+	float z = cumulative.z * addDet;
 
 	//note: if speed is an issue, you can skip the normalization step
 	// return NormalizeQuaternion(x, y, z, w);
-    return tf2::Quaternion(average_x, average_y, average_z, average_w);
+    // return tf2::Quaternion(average_x, average_y, average_z, average_w);
+    return tf2::Quaternion(x, y, z, w);
+
 
 }
 
