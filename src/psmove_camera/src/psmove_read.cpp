@@ -47,6 +47,7 @@ int main(int argc, char **argv)
     //cap.set(cv::CAP_PROP_XI_AUTO_WB, 0);
     // cap.set(cv::CAP_PROP_AUTO_WB, 0);
 
+
     cv::Mat image;
     sensor_msgs::ImagePtr img_msg;
 
@@ -55,6 +56,7 @@ int main(int argc, char **argv)
 
     while (ros::ok()) {
         cap.read(image);
+        ROS_INFO_STREAM(image.rows << " " << image.cols);
 
         if (image.empty()) {
             ROS_WARN("Frame was empty");
