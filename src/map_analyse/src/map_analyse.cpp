@@ -410,23 +410,28 @@ bool MapAnalyse::get_turtlebot_pose(cv::Mat& src, geometry_msgs::PoseStamped& po
 
                     }
 
+
+                    // bottom left quadrant
                     else if (x_val < 0 && y_val < 0) {
-                        theta = std::atan(abs(y_val/x_val));
+                        theta = M_PI-std::atan(abs(y_val/x_val));
                         // ROS_INFO_STREAM("\n4\n");
                     }
 
+                    // bottom right quadrant
                     else if (x_val > 0 && y_val < 0.1) {
-                        theta = M_PI - std::atan(abs(y_val/x_val));
+                        theta = std::atan(abs(y_val/x_val));
                         // ROS_INFO_STREAM("theta 2: " << theta);
 
                     }
 
-                    else if (x_val > 0 && y_val > 0.1) {
+                    // top left quadrant
+                    else if (x_val < 0 && y_val > 0.1) {
                         theta = std::atan(abs(y_val/x_val)) + M_PI;
                         // ROS_INFO_STREAM("theta 1: " << theta);
                     }
 
-                    else if (x_val < 0 && y_val > 0) {
+                    // top right quadrant
+                    else if (x_val > 0 && y_val > 0.1) {
                         theta = 2*M_PI - std::atan(abs(y_val/x_val));
                         // ROS_INFO_STREAM("\n3\n");
                     }
