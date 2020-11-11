@@ -596,7 +596,7 @@ if (true)
   mesh_viewer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_SHADING,
                                             pcl::visualization::PCL_VISUALIZER_SHADING_FLAT, "polygon");
    
-  mesh_viewer.addCoordinateSystem (1.0f, "global");
+  // mesh_viewer.addCoordinateSystem (3.0f, "global");
 
   mesh_viewer.initCameraParameters ();
   setViewerPose(mesh_viewer, range_image.getTransformationToWorldSystem ());
@@ -630,13 +630,29 @@ if (true)
       scene_sensor_pose = viewer.getViewerPose();
       vtkSmartPointer< vtkRenderWindow> vtk_render = mesh_viewer.getRenderWindow();
       // vtk_render->GetRGBAPixelData(0, 0, 640, 460, 1);
-      vtk_render->SetOffScreenRendering(1);
+      // vtk_render->SetOffScreenRendering(1);
       vtkSmartPointer<vtkWindowToImageFilter> windowToImageFilter = vtkSmartPointer<vtkWindowToImageFilter>::New();
       windowToImageFilter->SetInput(vtk_render);
       windowToImageFilter->Update();
       vtkSmartPointer<vtkImageData> image_data = windowToImageFilter->GetOutput();
 
-      int* dims = image_data->GetDimensions();
+      int dim[3];
+      image_data->GetDimensions(dim);
+
+      int imageWidth = dim[0];
+      int imageHeight = dim[1];
+
+
+      // 0, 0, this->w_ - 1, this->h_ - 1, true
+      unsigned char *pixels = vtk_render->GetRGBACharPixelData(0, 0, imageWidth - 1, imageWidth - 1, true);
+
+    
+      cv::Mat image = cv::Mat(imageHeight, imageWidth, CV_8UC4, pixels);
+
+
+
+
+      // int* dims = image_data->GetDimensions();
 
       // unsigned char* image_data_array = static_cast<unsigned char*>(image_data->GetScalarPointer(0,0,0));
 
@@ -650,8 +666,8 @@ if (true)
         range_image.getRangeImageWithSmoothedSurface(50, range_image);
 
         ROS_INFO_STREAM("x " << range_image.width << " y " << range_image.height);
-        float* ranges = range_image.getRangesArray();
-        unsigned char* rgb_image = pcl::visualization::FloatImageUtils::getVisualImage(ranges, range_image.width, range_image.height, true); 
+        // float* ranges = range_image.getRangesArray();
+        // unsigned char* rgb_image = pcl::visualization::FloatImageUtils::getVisualImage(ranges, range_image.width, range_image.height, true); 
 
         // for(int i = 0; i< range_image.width; i++) {
         //     for(int j = 0; j < range_image.height; j++) {
@@ -670,26 +686,26 @@ if (true)
         //     }
         // }
         // cv::Mat image(range_image.height,range_image.width,CV_8UC3,&image_data_array[0]);
-        int numberOfImageChannels = image_data->GetNumberOfScalarComponents();
-        int imageWidth = dims[0];
-        int imageHeight = dims[1];
-        int cvType = 0;
-        ROS_INFO_STREAM("number of image channels " << numberOfImageChannels);
-        switch(numberOfImageChannels){
-          case 1: cvType = CV_8UC1; break;
-          case 3: cvType = CV_8UC3; break;
-          case 4: cvType = CV_8UC4; break;
-          default: std::cerr << "Check number of vtk image channels!" << std::endl;
-        }
-        auto image = cv::Mat(dims[0], dims[1], cvType);
-        // Loop over the vtkImageData contents.
-        for ( int heightPos = 0; heightPos < imageHeight; heightPos++ ){
-          for ( int widthPos = 0; widthPos < imageWidth; widthPos++ ){
-            auto pixel = static_cast<unsigned char *>(image_data->GetScalarPointer(widthPos, heightPos, 0));
-            image.at<unsigned char>(heightPos, widthPos) = *pixel;
-          }
-        }
-        ROS_INFO_STREAM(dims[0] << " " <<dims[1]);
+        // int numberOfImageChannels = image_data->GetNumberOfScalarComponents();
+        // int imageWidth = dims[0];
+        // int imageHeight = dims[1];
+        // int cvType = 0;
+        // ROS_INFO_STREAM("number of image channels " << numberOfImageChannels);
+        // switch(numberOfImageChannels){
+        //   case 1: cvType = CV_8UC1; break;
+        //   case 3: cvType = CV_8UC3; break;
+        //   case 4: cvType = CV_8UC4; break;
+        //   default: std::cerr << "Check number of vtk image channels!" << std::endl;
+        // }
+        // auto image = cv::Mat(dims[0], dims[1], cvType);
+        // // Loop over the vtkImageData contents.
+        // for ( int heightPos = 0; heightPos < imagesHeight; heightPos++ ){
+        //   for ( int widthPos = 0; widthPos < imageWidth; widthPos++ ){
+        //     auto pixel = static_cast<unsigned char *>(image_data->GetScalarPointer(widthPos, heightPos, 0));
+        //     image.at<unsigned char>(heightPos, widthPos) = *pixel;
+        //   }
+        // }
+        // ROS_INFO_STREAM(dims[0] << " " <<dims[1]);
         // unsigned char* data = static_cast<unsigned char*>(image_data->GetScalarPointer());
         // cv::Mat image(dims[0], dims[1], CV_8UC4, static_cast<unsigned char*>(image_data->GetScalarPointer()));
 
@@ -701,11 +717,11 @@ if (true)
         // cv::flip(openCVImage,openCVImage, 0);
 
         // cv::Mat image(image_data.,range_image.width,CV_8UC3,&image_data_array[0]);
-        img_msg = cv_bridge::CvImage(std_msgs::Header(), "rgb8", image).toImageMsg();
+        img_msg = cv_bridge::CvImage(std_msgs::Header(), "rgba8", image).toImageMsg();
         pub_img.publish(img_msg);
         ros::spinOnce();
         ROS_INFO_STREAM(image.rows << " " << image.cols);
-        delete[] ranges;
+        // delete[] ranges;
         // delete[] data;
         // delete[] dims;
 
