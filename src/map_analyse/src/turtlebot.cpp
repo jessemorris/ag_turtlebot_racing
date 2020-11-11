@@ -24,7 +24,7 @@
 
 tf2::Quaternion inverse_sign_quaternion(tf2::Quaternion& q);
 bool are_quats_close(tf2::Quaternion& q1, tf2::Quaternion& q2);
-tf2::Quaternion average_quaternion(Vec4d& cumulative, tf2::Quaternion& newRotation, tf2::Quaternion& firstRotation, int addAmount);
+tf2::Quaternion average_quaternion(Vec4d& cumulative, tf2::Quaternion& newRotation, tf2::Quaternion& firstRotation, int addAmount, std::vector<geometry_msgs::PoseStamped>& frame_history);
 
 
 
@@ -84,7 +84,7 @@ bool Turtlebot::compute_average_pose(double& x_average, double& y_average, Vec4d
         // double roll, pitch, yaw;
         // tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
 
-        average_quaternion(quat_average, quat, quat_first, camera_frame_history.size());
+        average_quaternion(quat_average, quat, quat_first, camera_frame_history.size(), camera_frame_history);
 
         // yaw_average += yaw;
         x_average += pose.pose.position.x;
@@ -170,12 +170,17 @@ const geometry_msgs::PoseStamped& Turtlebot::get_latest_camera_pose() const {
 //some code to help with Quaternions
 //http://wiki.unity3d.com/index.php/Averaging_Quaternions_and_Vectors
 
-tf2::Quaternion average_quaternion(Vec4d& cumulative, tf2::Quaternion& newRotation, tf2::Quaternion& firstRotation, int addAmount){
+tf2::Quaternion average_quaternion(Vec4d& cumulative, tf2::Quaternion& newRotation, tf2::Quaternion& firstRotation, int addAmount, std::vector<geometry_msgs::PoseStamped>& frame_history){
 
-	float w = 0.0f;
-	float x = 0.0f;
-	float y = 0.0f;
-	float z = 0.0f;
+	float average_w = 0.0f;
+	float average_x = 0.0f;
+	float average_y = 0.0f;
+	float average_z = 0.0f;
+
+    float sum_w = 0.0f;
+	float sum_x = 0.0f;
+	float sum_y = 0.0f;
+	float sum_z = 0.0f;
 
 	//Before we add the new rotation to the average (mean), we have to check whether the quaternion has to be inverted. Because
 	//q and -q are the same rotation, but cannot be averaged, we have to make sure they are all the same.
@@ -184,23 +189,58 @@ tf2::Quaternion average_quaternion(Vec4d& cumulative, tf2::Quaternion& newRotati
 		newRotation = inverse_sign_quaternion(newRotation);
 	}
 
+    // Calculate std
+    average_w = cumulative.w/(float)addAmount;
+    ROS_INFO_STREAM("Average w: " << average_w);
+    average_x = cumulative.x/(float)addAmount;
+    ROS_INFO_STREAM("Average x: " << average_x);
+    average_y = cumulative.y/(float)addAmount;
+    ROS_INFO_STREAM("Average y: " << average_y);
+    average_z = cumulative.z/(float)addAmount;
+    ROS_INFO_STREAM("Average z: " << average_z);
 
-	//Average the values
-	float addDet = 1.0f/(float)addAmount;
-	cumulative.w += newRotation.w();
-	w = cumulative.w * addDet;
-	cumulative.x += newRotation.x();
-	x = cumulative.x * addDet;
-	cumulative.y += newRotation.y();
-	y = cumulative.y * addDet;
-	cumulative.z += newRotation.z();
-	z = cumulative.z * addDet;
+    for (int i = 0; i < frame_history.size(); i++) {
+        sum_w += pow(frame_history[i].pose.orientation.w - (float)average_w, 2.0);
+        sum_x += pow(frame_history[i].pose.orientation.x - (float)average_x, 2.0);
+        sum_y += pow(frame_history[i].pose.orientation.y - (float)average_y, 2.0);
+        sum_z += pow(frame_history[i].pose.orientation.z - (float)average_z, 2.0);
+    }
+
+    sum_w = pow(sum_w/addAmount, 0.5);
+    sum_x = pow(sum_x/addAmount, 0.5);
+    sum_y = pow(sum_y/addAmount, 0.5);
+    sum_z = pow(sum_z/addAmount, 0.5);
+
+    float std_val = 2.0;
+
+    if (sum_w*std_val< 0  - newRotation.w()  || sum_x*std_val - newRotation.x() < 0 || sum_y*std_val - newRotation.y() < 0 || sum_z*std_val - newRotation.z() < 0  ) {
+
+        frame_history.pop_back();
+    }
+
+	// //Average the values
+	// float addDet = 1.0f/(float)addAmount;
+	// cumulative.w += newRotation.w();
+	// w = cumulative.w * addDet;
+	// cumulative.x += newRotation.x();
+	// x = cumulative.x * addDet;
+	// cumulative.y += newRotation.y();
+	// y = cumulative.y * addDet;
+	// cumulative.z += newRotation.z();
+	// z = cumulative.z * addDet;
 
 	//note: if speed is an issue, you can skip the normalization step
 	// return NormalizeQuaternion(x, y, z, w);
-    return tf2::Quaternion(x, y, z, w);
+    return tf2::Quaternion(average_x, average_y, average_z, average_w);
 
 }
+
+
+
+
+
+
+
 
 //Changes the sign of the quaternion components. This is not the same as the inverse.
 tf2::Quaternion inverse_sign_quaternion(tf2::Quaternion& q){
@@ -215,7 +255,7 @@ bool are_quats_close(tf2::Quaternion& q1, tf2::Quaternion& q2){
 	if(dot < 0.0f){
 		return true;
 	}
-    
+
 	else{
 		return false;
 	}
