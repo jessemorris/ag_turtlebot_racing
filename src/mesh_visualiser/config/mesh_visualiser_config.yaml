@@ -1,0 +1,5 @@
+
+default_depth: 10
+default_solver_divide: 8
+default_iso_divide: 11
+default_point_weight: 4.0
