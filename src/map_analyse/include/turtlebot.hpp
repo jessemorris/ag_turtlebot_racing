@@ -61,6 +61,16 @@ class Turtlebot {
          * finds the standard deviation of the values in the pose array. Specifically the
          */
         bool compute_average_pose(double& x_average, double& y_average, Vec4d& quat_average);
+
+        // finds the standard deviation og the current accepted poses and either accepts
+        // or rejects the newest pose depenidng on if its close enough to hte average
+        // based on std, or not
+        bool std_remove_outlier_pose(double& _average, double& y_average,
+            Vec4d& vec, std::vector<geometry_msgs::PoseStamped>& camera_frame_history,
+            geometry_msgs::PoseStamped& pose);
+
+
+
         // bool compute_standard_deviation(double x_average, double y_average, double&yaw_average)
         std::unique_ptr<geometry_msgs::PoseStamped> filter_poses(double x_average, double y_average, const Vec4d& vec);
 
