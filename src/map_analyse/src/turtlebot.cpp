@@ -8,6 +8,7 @@
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include <tf2/transform_datatypes.h>
 
+
 #include <iostream>
 #include <stdio.h>
 #include <memory>
@@ -49,33 +50,54 @@ void Turtlebot::update_pose_camera(geometry_msgs::PoseStamped& pose) {
         camera_frame_history.erase(camera_frame_history.begin());
     }
 
-    double x_average, y_average;
+
+    double x_average, y_average, pitch_average_sum;
     Vec4d vec = {0.0, 0.0, 0.0, 0.0};
-    compute_average_pose(x_average, y_average, vec);
+
+    compute_average_pose(x_average, y_average, pitch_average_sum, vec);
+
+
+
+
+
+
+    tf2::Quaternion current_quat;
+    tf2::convert(camera_frame_history.back().pose.orientation, current_quat);
+    double roll, pitch, yaw;
+    tf2::Matrix3x3 m(current_quat);
+    m.getRPY(roll, pitch, yaw);
+    pitch_val.push_back(pitch);
+
+    x_positions.push_back(camera_frame_history.back().pose.position.x);
+    y_positions.push_back(camera_frame_history.back().pose.position.y);
+
 
     //calculate std of pose vector
     //if pose within x of std put onto camera_frame_history
 
-    std_remove_outlier_pose(x_average, y_average, vec, camera_frame_history, pose);
+    std_remove_outlier_pose(x_average, y_average, pitch_average_sum, camera_frame_history);
+
+
+    if (true) {
 
 
 
+        geometry_msgs::PoseStamped pose_filtered;
+        camera_frame_history.push_back(pose);
 
+        std::unique_ptr<geometry_msgs::PoseStamped> filtered_pose = filter_poses(x_average, y_average, vec);
 
-
-
-    geometry_msgs::PoseStamped pose_filtered;
-    camera_frame_history.push_back(pose);
-
-    std::unique_ptr<geometry_msgs::PoseStamped> filtered_pose = filter_poses(x_average, y_average, vec);
-
-    if(filtered_pose) {
-        camera_frame_odom_pub.publish(*filtered_pose);
+        if(filtered_pose) {
+            camera_frame_odom_pub.publish(*filtered_pose);
+        }
     }
+
+
 
 }
 
-bool Turtlebot::compute_average_pose(double& x_average, double& y_average, Vec4d& quat_average) {
+bool Turtlebot::compute_average_pose(double& x_average, double& y_average,
+    double& pitch_average_sum, Vec4d& quat_average) {
 
 
 
@@ -104,6 +126,13 @@ bool Turtlebot::compute_average_pose(double& x_average, double& y_average, Vec4d
         x_average += pose.pose.position.x;
         y_average += pose.pose.position.y;
 
+        double average_roll, average_pitch, average_yaw;
+        tf2::Matrix3x3 m(quat);
+        m.getRPY(average_roll, average_pitch, average_yaw);
+
+        pitch_average_sum += average_pitch;
+
+
     }
 
     //we have now averaged the quaternions so this should now be the average yaw
@@ -113,6 +142,7 @@ bool Turtlebot::compute_average_pose(double& x_average, double& y_average, Vec4d
 
     x_average/=camera_frame_history.size();
     y_average/=camera_frame_history.size();
+    pitch_average_sum/=camera_frame_history.size();
 
 
     //
@@ -141,9 +171,50 @@ bool Turtlebot::compute_average_pose(double& x_average, double& y_average, Vec4d
     // return pose_stamped;
 }
 
-bool Turtlebot::std_remove_outlier_pose(double& _average, double& y_average,
-    Vec4d& vec, std::vector<geometry_msgs::PoseStamped>& camera_frame_history,
-    geometry_msgs::PoseStamped& pose) {
+bool Turtlebot::std_remove_outlier_pose(double& x_average, double& y_average,
+    double& pitch_average_sum, std::vector<geometry_msgs::PoseStamped>& camera_frame_history) {
+
+        float x_position_sum = 0;
+        float y_position_sum = 0;
+        float pitch_sum = 0;
+
+
+        for (int i = 0; i < x_positions.size(); i++) {
+
+            pitch_sum += pow(pitch_val[i] - (float)pitch_average_sum, 2.0);
+            x_position_sum += pow(x_positions[i] - (float)x_average, 2.0);
+            y_position_sum += pow(y_positions[i] - (float)y_average, 2.0);
+
+        }
+
+        pitch_sum = pow(pitch_sum/camera_frame_history.size(), 0.5);
+        x_position_sum = pow(x_position_sum/camera_frame_history.size(), 0.5);
+        y_position_sum = pow(y_position_sum/camera_frame_history.size(), 0.5);
+
+
+
+
+
+
+        // IF STATEMENT HERE TESTING WHETHER THE THREE SUM VARIABLES ARE WITHIN
+        // X STANDARD DEVIATIONS OF THE MEANS
+
+        if ((false) && camera_frame_history.size() != 0 ) {
+            x_positions.pop_back();
+            y_positions.pop_back();
+            pitch_val.pop_back();
+
+
+        }
+
+
+
+
+
+
+
+
+
 
     return true;
 

@@ -16,6 +16,15 @@
 #include <iostream>
 #include <stdio.h>
 
+#include <tf/tf.h>
+
+
+#include <geometry_msgs/Vector3.h>
+// #include <Matrix3x3.h>
+// #include <LinearMath/btMatrix3x3.h>
+
+#include <cmath>
+
 #include <vector>
 #include <string>
 
@@ -57,17 +66,24 @@ class Turtlebot {
         const geometry_msgs::PoseStamped& inital_pose_camera;
         //will eventually need some ros stuff here i think
 
+
+        std::vector<float> x_positions;
+        std::vector<float> y_positions;
+        std::vector<double> pitch_val;
+
+
+
         /**
          * finds the standard deviation of the values in the pose array. Specifically the
          */
-        bool compute_average_pose(double& x_average, double& y_average, Vec4d& quat_average);
+        bool compute_average_pose(double& x_average, double& y_average,
+            double& pitch_average, Vec4d& quat_average);
 
         // finds the standard deviation og the current accepted poses and either accepts
         // or rejects the newest pose depenidng on if its close enough to hte average
         // based on std, or not
-        bool std_remove_outlier_pose(double& _average, double& y_average,
-            Vec4d& vec, std::vector<geometry_msgs::PoseStamped>& camera_frame_history,
-            geometry_msgs::PoseStamped& pose);
+        bool std_remove_outlier_pose(double& x_average, double& y_average,
+            double& pitch_average_sum, std::vector<geometry_msgs::PoseStamped>& camera_frame_history);
 
 
 
