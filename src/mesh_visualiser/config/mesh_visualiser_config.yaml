@@ -3,3 +3,7 @@ default_depth: 10
 default_solver_divide: 8
 default_iso_divide: 11
 default_point_weight: 4.0
+
+noise_level: 0
+min_range: 0
+border_size: 1

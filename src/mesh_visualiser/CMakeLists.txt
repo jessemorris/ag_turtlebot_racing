@@ -15,6 +15,9 @@ find_package(catkin REQUIRED COMPONENTS
 	std_msgs
 	cv_bridge
 	sensor_msgs
+	tf2_ros
+	tf2
+	tf2_sensor_msgs
 	#open3d_conversions
 	)
 
@@ -36,20 +39,6 @@ include_directories(
    ${Open3D_INCLUDE_DIRS}
 )
 
-catkin_package(
-  LIBRARIES ${PROJECT_NAME}
-#	INCLUDE_DIRS include
-	CATKIN_DEPENDS
-	roscpp
-	image_transport
-	std_msgs
-	tf2_ros
-	tf2_sensor_msgs
-	nav_msgs
-	sensor_msgs
-	cv_bridge
-	#open3d_conversions
-)
 
 
 
@@ -95,11 +84,11 @@ catkin_package(
 # )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
+add_service_files(
+   FILES
 #   Service1.srv
-#   Service2.srv
-# )
+   RequestModelView.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -108,11 +97,29 @@ catkin_package(
 #   Action2.action
 # )
 
+
+
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+generate_messages(DEPENDENCIES actionlib_msgs geometry_msgs std_msgs sensor_msgs)
+
+
+catkin_package(
+  LIBRARIES ${PROJECT_NAME}
+#	INCLUDE_DIRS include
+	CATKIN_DEPENDS std_msgs geometry_msgs message_runtime
+	roscpp
+	image_transport
+	std_msgs
+	tf2_ros
+	tf2_sensor_msgs
+	nav_msgs
+	sensor_msgs
+	cv_bridge
+	#open3d_conversions
+)
+
+
+
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -166,9 +173,8 @@ include_directories(
 
 add_executable(${PROJECT_NAME}_node
 		src/main.cpp
-		src/mesh_builder.cpp
-		#src/opengl.cpp
-		#src/glad.c
+		src/virtual_object.cpp
+	
 		
 )
 

@@ -67,6 +67,14 @@
         "map": "cpp",
         "memory_resource": "cpp",
         "random": "cpp",
-        "set": "cpp"
+        "set": "cpp",
+        "codecvt": "cpp",
+        "filesystem": "cpp",
+        "future": "cpp",
+        "valarray": "cpp",
+        "variant": "cpp",
+        "core": "cpp",
+        "numericaldiff": "cpp",
+        "*.ipp": "cpp"
     }
 }
