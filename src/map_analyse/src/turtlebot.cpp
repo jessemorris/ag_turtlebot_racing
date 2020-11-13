@@ -57,10 +57,13 @@ void Turtlebot::update_pose_camera(geometry_msgs::PoseStamped& pose) {
     compute_average_pose(x_average, y_average, pitch_average_sum, vec);
 
 
+    //calculate std of pose vector
+    //if pose within x of std put onto camera_frame_history
+
+    camera_frame_history.push_back(pose);
 
 
-
-
+    // push pitch
     tf2::Quaternion current_quat;
     tf2::convert(camera_frame_history.back().pose.orientation, current_quat);
     double roll, pitch, yaw;
@@ -68,22 +71,17 @@ void Turtlebot::update_pose_camera(geometry_msgs::PoseStamped& pose) {
     m.getRPY(roll, pitch, yaw);
     pitch_val.push_back(pitch);
 
+    // push x and y vals
     x_positions.push_back(camera_frame_history.back().pose.position.x);
     y_positions.push_back(camera_frame_history.back().pose.position.y);
 
 
-    //calculate std of pose vector
-    //if pose within x of std put onto camera_frame_history
 
-    std_remove_outlier_pose(x_average, y_average, pitch_average_sum, camera_frame_history);
+    if ( camera_frame_history.size() > 10) {
 
+        // geometry_msgs::PoseStamped pose_filtered;
+        std_remove_outlier_pose(x_average, y_average, pitch_average_sum, camera_frame_history);
 
-    if (true) {
-
-
-
-        geometry_msgs::PoseStamped pose_filtered;
-        camera_frame_history.push_back(pose);
 
         std::unique_ptr<geometry_msgs::PoseStamped> filtered_pose = filter_poses(x_average, y_average, vec);
 
@@ -187,22 +185,75 @@ bool Turtlebot::std_remove_outlier_pose(double& x_average, double& y_average,
 
         }
 
-        pitch_sum = pow(pitch_sum/camera_frame_history.size(), 0.5);
-        x_position_sum = pow(x_position_sum/camera_frame_history.size(), 0.5);
-        y_position_sum = pow(y_position_sum/camera_frame_history.size(), 0.5);
+        float pitch_std = pow(pitch_sum/camera_frame_history.size(), 0.5);
+        float x_std = pow(x_position_sum/camera_frame_history.size(), 0.5);
+        float y_std = pow(y_position_sum/camera_frame_history.size(), 0.5);
+
+        ROS_INFO_STREAM("pitch std: " << pitch_std << " x_std: " << x_std
+            << " y_std: " << y_std);
+
+        float x_amt = 1.5;
+        float y_amt = 1.5;
+        float pitch_amt = M_PI/10;
+
+        float upper_delta = pitch_average_sum + pitch_std*pitch_amt;
+        float lower_delta = pitch_average_sum - pitch_std*pitch_amt;
 
 
+        bool upper_flag = false;
+        bool lower_flag = false;
+        bool pitch_bool = false;
+
+        if (upper_delta > M_PI) {
+            upper_delta = upper_delta - 2*M_PI;
+            upper_flag = true;
+        }
+        else if (lower_delta < -M_PI) {
+            lower_delta = lower_delta + 2*M_PI;
+            lower_flag = true;
+        }
 
 
+        if ( (!upper_flag && !lower_flag) && (lower_delta < pitch_val.back()
+            && pitch_val.back() < upper_delta ) ) {
+                pitch_bool = true;
+            }
+        else if ( (upper_flag && !lower_flag) && (lower_delta < pitch_val.back()
+            && pitch_val.back() < upper_delta ) ) {
+                pitch_bool = true;
+            }
+        else if ( (!upper_flag && lower_flag) && (lower_delta < pitch_val.back()
+            && pitch_val.back() < upper_delta ) ) {
+                pitch_bool = true;
+            }
+
+
+        if (x_average-x_amt*x_std < x_positions.back() && x_positions.back() < x_average+x_amt*x_std) {
+
+            ROS_INFO_STREAM("x average within standard deviation");
+
+            if (y_average-y_amt*y_std < y_positions.back() && y_positions.back() < y_average+y_amt*y_std) {
+
+                ROS_INFO_STREAM("y average within standard deviation");
+
+                if (pitch_bool) {
+
+                    ROS_INFO_STREAM("pitch within standard deviation");
+
+                    camera_frame_history.pop_back();
+                    x_positions.pop_back();
+                    y_positions.pop_back();
+                    pitch_val.pop_back();
+                }
+            }
+        }
 
 
         // IF STATEMENT HERE TESTING WHETHER THE THREE SUM VARIABLES ARE WITHIN
         // X STANDARD DEVIATIONS OF THE MEANS
 
         if ((false) && camera_frame_history.size() != 0 ) {
-            x_positions.pop_back();
-            y_positions.pop_back();
-            pitch_val.pop_back();
+
 
 
         }
