@@ -40,7 +40,7 @@ class Turtlebot {
 
 
     public:
-        Turtlebot(ros::NodeHandle& _nh, const geometry_msgs::PoseStamped& _inital_pose, int _history_size = 20);
+        Turtlebot(ros::NodeHandle& _nh, const geometry_msgs::PoseStamped& _inital_pose, int _history_size = 10);
         ~Turtlebot() {}
 
         /**

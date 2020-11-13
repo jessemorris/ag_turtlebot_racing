@@ -48,6 +48,10 @@ void Turtlebot::update_pose_camera(geometry_msgs::PoseStamped& pose) {
     if (camera_frame_history.size() >= history_size) {
         //remove the first element
         camera_frame_history.erase(camera_frame_history.begin());
+        x_positions.erase(x_positions.begin());
+        y_positions.erase(y_positions.begin());
+        pitch_val.erase(pitch_val.begin());
+
     }
 
 
@@ -62,25 +66,34 @@ void Turtlebot::update_pose_camera(geometry_msgs::PoseStamped& pose) {
 
     camera_frame_history.push_back(pose);
 
-
     // push pitch
     tf2::Quaternion current_quat;
     tf2::convert(camera_frame_history.back().pose.orientation, current_quat);
     double roll, pitch, yaw;
     tf2::Matrix3x3 m(current_quat);
     m.getRPY(roll, pitch, yaw);
-    pitch_val.push_back(pitch);
-
-    // push x and y vals
-    x_positions.push_back(camera_frame_history.back().pose.position.x);
-    y_positions.push_back(camera_frame_history.back().pose.position.y);
 
 
+    if ( !isnan(yaw)) {
 
-    if ( camera_frame_history.size() > 10) {
+
+        pitch_val.push_back(yaw);
+
+        ROS_INFO_STREAM("roll " << roll << " pitch " << pitch << " yaw " << yaw);
+
+        // push x and y vals
+        x_positions.push_back(camera_frame_history.back().pose.position.x);
+        y_positions.push_back(camera_frame_history.back().pose.position.y);
+    }
+    else {
+        camera_frame_history.pop_back();
+    }
+
+
+    if ( camera_frame_history.size() > 5) {
 
         // geometry_msgs::PoseStamped pose_filtered;
-        std_remove_outlier_pose(x_average, y_average, pitch_average_sum, camera_frame_history);
+        // std_remove_outlier_pose(x_average, y_average, pitch_average_sum, camera_frame_history);
 
 
         std::unique_ptr<geometry_msgs::PoseStamped> filtered_pose = filter_poses(x_average, y_average, vec);
@@ -128,7 +141,10 @@ bool Turtlebot::compute_average_pose(double& x_average, double& y_average,
         tf2::Matrix3x3 m(quat);
         m.getRPY(average_roll, average_pitch, average_yaw);
 
-        pitch_average_sum += average_pitch;
+        // ROS_INFO_STREAM("roll " << average_roll << " pitch " << average_pitch << " yaw " << average_yaw);
+
+
+        pitch_average_sum += average_yaw;
 
 
     }
@@ -183,6 +199,11 @@ bool Turtlebot::std_remove_outlier_pose(double& x_average, double& y_average,
             x_position_sum += pow(x_positions[i] - (float)x_average, 2.0);
             y_position_sum += pow(y_positions[i] - (float)y_average, 2.0);
 
+            ROS_INFO_STREAM("pitch_val[i]: " << pitch_val[i]);
+            ROS_INFO_STREAM("x_pos[i]: " << x_positions[i]);
+            ROS_INFO_STREAM("y_pos[i]: " << y_positions[i]);
+
+
         }
 
         float pitch_std = pow(pitch_sum/camera_frame_history.size(), 0.5);
@@ -213,6 +234,8 @@ bool Turtlebot::std_remove_outlier_pose(double& x_average, double& y_average,
             lower_flag = true;
         }
 
+        ROS_INFO_STREAM("upper_flag: " << upper_flag << " lower_flag: " <<
+            lower_flag);
 
         if ( (!upper_flag && !lower_flag) && (lower_delta < pitch_val.back()
             && pitch_val.back() < upper_delta ) ) {
@@ -249,14 +272,6 @@ bool Turtlebot::std_remove_outlier_pose(double& x_average, double& y_average,
         }
 
 
-        // IF STATEMENT HERE TESTING WHETHER THE THREE SUM VARIABLES ARE WITHIN
-        // X STANDARD DEVIATIONS OF THE MEANS
-
-        if ((false) && camera_frame_history.size() != 0 ) {
-
-
-
-        }
 
 
 
