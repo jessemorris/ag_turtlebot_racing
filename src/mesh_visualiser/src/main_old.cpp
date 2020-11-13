@@ -1,4 +1,5 @@
 #include <ros/ros.h>
+#include <ros/package.h>
 #include <image_transport/image_transport.h>
 
 
@@ -89,6 +90,7 @@
 #include <boost/thread/thread.hpp>
 
 #include <vtkSmartPointer.h>
+#include <pcl/common/transforms.h>
 
 
 #include <iostream>
@@ -111,13 +113,15 @@ float angular_resolution_x = 0.1f,
 pcl::RangeImage::CoordinateFrame coordinate_frame = pcl::RangeImage::CAMERA_FRAME;
 bool live_update = false;
 
-void compute (const pcl::PCLPointCloud2::ConstPtr &input, pcl::PolygonMesh &output,
+void compute (const pcl::PointCloud<PointTypeColor>::Ptr input, pcl::PolygonMesh &output,
          int depth, int solver_divide, int iso_divide, float point_weight)
 {
   pcl::PointCloud<pcl::PointNormal>::Ptr xyz_cloud (new pcl::PointCloud<pcl::PointNormal> ());
   pcl::PointCloud<pcl::PointXYZ>::Ptr normal_cloud(new pcl::PointCloud<pcl::PointXYZ>);
-  pcl::fromPCLPointCloud2 (*input, *xyz_cloud);
-  pcl::fromPCLPointCloud2 (*input, *normal_cloud);
+  pcl::copyPointCloud(*input, *xyz_cloud);
+  pcl::copyPointCloud(*input, *normal_cloud);
+//   pcl::fromPCLPointCloud2 (*input, *xyz_cloud);
+//   pcl::fromPCLPointCloud2 (*input, *normal_cloud);
 
   // pcl::NormalEstimationOMP<pcl::PointXYZ, pcl::Normal> ne;
   pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
@@ -240,10 +244,14 @@ int  main (int argc, char** argv){
 
 
 	pcl::PointCloud<PointTypeColor>::Ptr point_cloud_ptr (new pcl::PointCloud<PointTypeColor> ());
+	pcl::PointCloud<PointTypeColor>::Ptr transformed_point_cloud(new pcl::PointCloud<PointTypeColor> ());
 	pcl::PointCloud<PointTypeColor>& point_cloud = *point_cloud_ptr;
+		
+	// pcl::PointCloud<PointTypeColor>& transformed_point_cloud = *transformed_point_cloud_ptr;
+
 
     // std::string filename = argv[pcd_filename_indices[0]];
-	std::string filename = "/home/jesse/Code/src/ar_turtlebot_racing/src/mesh_visualiser/test_data/bunny.pcd";
+	std::string filename =ros::package::getPath("mesh_visualiser") + std::string("/pc_resources/bunny.pcd");
     if (pcl::io::loadPCDFile(filename, *cloud) == -1)	{
       std::cout << "Was not able to open file \""<<filename<<"\".\n";
       printUsage (argv[0]);
@@ -251,13 +259,18 @@ int  main (int argc, char** argv){
     }
     pcl::fromPCLPointCloud2 (*cloud, point_cloud);
 
-	scene_sensor_pose = Eigen::Affine3f (Eigen::Translation3f (point_cloud.sensor_origin_[0] ,
-		point_cloud.sensor_origin_[1],
-		point_cloud.sensor_origin_[2] - 1)) *
+	Eigen::Affine3f transform_2 = Eigen::Affine3f::Identity();
+
+	transform_2.rotate(Eigen::AngleAxisf (M_PI, Eigen::Vector3f::UnitZ()) * Eigen::AngleAxisf (M_PI/4, Eigen::Vector3f::UnitX()) );
+	pcl::transformPointCloud(point_cloud, *transformed_point_cloud, transform_2);  
+
+	scene_sensor_pose = Eigen::Affine3f (Eigen::Translation3f (transformed_point_cloud->sensor_origin_[0] ,
+		transformed_point_cloud->sensor_origin_[1],
+		transformed_point_cloud->sensor_origin_[2] - 1)) *
 		Eigen::Affine3f (Eigen::AngleAxisf(M_PI/2.0, Eigen::Vector3f::UnitZ()));
 
-	ROS_INFO_STREAM("made point cloud with " << point_cloud.size());
-	ROS_INFO_STREAM(pcl::getFieldsList (point_cloud).c_str ());
+	ROS_INFO_STREAM("made point cloud with " << transformed_point_cloud->size());
+	ROS_INFO_STREAM(pcl::getFieldsList (*transformed_point_cloud).c_str ());
 
 	// -----------------------------------------------
 	// -----Create RangeImage from the PointCloud-----
@@ -267,7 +280,7 @@ int  main (int argc, char** argv){
 	int border_size = 1;
 	pcl::RangeImage::Ptr range_image_ptr(new pcl::RangeImage);
 	pcl::RangeImage& range_image = *range_image_ptr;   
-	range_image.createFromPointCloud (point_cloud, angular_resolution_x, angular_resolution_y,
+	range_image.createFromPointCloud (*transformed_point_cloud, angular_resolution_x, angular_resolution_y,
 										pcl::deg2rad (360.0f), pcl::deg2rad (360.0f),
 										scene_sensor_pose, coordinate_frame, noise_level, min_range, border_size);
 
@@ -278,7 +291,7 @@ int  main (int argc, char** argv){
   
 
   pcl::PolygonMesh output;
-  compute (cloud, output, default_depth, default_solver_divide, default_iso_divide, default_point_weight);
+  compute (transformed_point_cloud, output, default_depth, default_solver_divide, default_iso_divide, default_point_weight);
 
   ROS_INFO_STREAM(output.polygons.size());
 
@@ -346,7 +359,7 @@ int  main (int argc, char** argv){
 
 
       //can trt createFromPointCloudWithKnownSize()
-	range_image.createFromPointCloud (point_cloud, angular_resolution_x, angular_resolution_y,
+	range_image.createFromPointCloud (*transformed_point_cloud, angular_resolution_x, angular_resolution_y,
 									pcl::deg2rad (360.0f), pcl::deg2rad (360.0f),
 									scene_sensor_pose, pcl::RangeImage::CAMERA_FRAME, noise_level, min_range, border_size);
 

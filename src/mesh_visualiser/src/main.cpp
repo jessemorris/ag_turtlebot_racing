@@ -11,9 +11,12 @@ int  main (int argc, char** argv){
 	ros::init(argc, argv, "mesh_visualiser");
 	ros::NodeHandle nh;
 
-
     VirtualObject obj(nh, "bunny", 5, 5);
-    ros::spin();
+
+    while(ros::ok()) {
+        ros::spinOnce();
+
+    }
 
 	// image_transport::ImageTransport it(nh);
 	// image_transport::Publisher pub_img = it.advertise("mesh_vis", 20);

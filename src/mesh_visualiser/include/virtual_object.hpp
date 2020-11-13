@@ -95,6 +95,7 @@
 #include <boost/thread/thread.hpp>
 
 #include <vtkSmartPointer.h>
+#include <vtkCamera.h>
 
 
 #include "mesh_visualiser/RequestModelView.h"
@@ -132,7 +133,7 @@ class VirtualObject {
 			int _global_x, int _global_y, std::string file_suffix = ".pcd");
         ~VirtualObject();
 
-        void compute_mesh_polygon(const pcl::PCLPointCloud2::ConstPtr &input, pcl::PolygonMesh &output,
+        void compute_mesh_polygon(const pcl::PointCloud<PointTypeColor>::Ptr input, pcl::PolygonMesh &output,
         	int depth, int solver_divide, int iso_divide, float point_weight);
 
         // pcl::PointCloud<pcl::PointXYZRGB>::Ptr extract_mesh(const std::string& _object_name);
@@ -154,11 +155,16 @@ class VirtualObject {
 		image_transport::ImageTransport image_transport;
 		image_transport::Publisher mesh_publisher;
 
+		double origin_x_offset;
+		double origin_y_offset;
+		double origin_z_offset;
 
 		
 
         pcl::PCLPointCloud2::Ptr cloud;
         pcl::PointCloud<PointTypeColor>::Ptr point_cloud;
+		pcl::PointCloud<PointTypeColor>::Ptr transformed_point_cloud;
+
         // std::unique_ptr<pcl::PointCloud<PointTypeColor>> point_cloud;
 
 		float angular_resolution_x;
@@ -182,10 +188,9 @@ class VirtualObject {
 
 		//view orientation
 		Eigen::Affine3f scene_sensor_pose;
-		tf2::Quaternion last_orientation;
 
-		std::thread renderer_thread;
-		std::mutex image_mutex;
+		// std::thread renderer_thread;
+		// std::mutex image_mutex;
 		bool should_run;
 
 		cv::Mat rendered_image;
@@ -195,7 +200,7 @@ class VirtualObject {
 	void set_viewer_pose(const Eigen::Affine3f& viewer_pose);
 	bool create_render(tf2::Quaternion orientation, cv::Mat& rendered_image);
 
-	void render_thread();
+	// void render_thread();
 
 };
 
