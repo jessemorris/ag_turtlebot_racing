@@ -9,7 +9,6 @@
 #include <memory>
 
  
-// pcl::RangeImage::CoordinateFrame coordinate_frame = pcl::RangeImage::CAMERA_FRAME;
 
 VirtualObject::VirtualObject(ros::NodeHandle& _nh, const std::string& _object_name, 
 	int _global_x, int _global_y, std::string file_suffix) :
@@ -38,21 +37,17 @@ VirtualObject::VirtualObject(ros::NodeHandle& _nh, const std::string& _object_na
 		nh.getParam("/mesh_visualiser/origin_z_offset", origin_z_offset);
 
 
-		ROS_INFO_STREAM("default depth " << default_depth);
-		ROS_INFO_STREAM("default_solver_divide " << default_solver_divide);
-		ROS_INFO_STREAM("default_iso_divide " << default_iso_divide);
-		ROS_INFO_STREAM("default_point_weight " << default_point_weight);
+		// ROS_INFO_STREAM("default depth " << default_depth);
+		// ROS_INFO_STREAM("default_solver_divide " << default_solver_divide);
+		// ROS_INFO_STREAM("default_iso_divide " << default_iso_divide);
+		// ROS_INFO_STREAM("default_point_weight " << default_point_weight);
+
+
 		resource_path = ros::package::getPath("mesh_visualiser") + std::string("/pc_resources");
-		ROS_INFO_STREAM(resource_path);
 		file_path = resource_path + "/" + object_name + file_suffix;
-		ROS_INFO_STREAM(file_path);
 
-		// cloud = std::unique_ptr<pcl::PCLPointCloud2>();
-		// point_cloud = std::unique_ptr<pcl::PointCloud<PointTypeColor>>();
 
-		// *point_cloud = *point_cloud_ptr;
-
-		ROS_INFO_STREAM("made point clounds");
+		// ROS_INFO_STREAM("made point clounds");
 
 
 
@@ -70,9 +65,6 @@ VirtualObject::VirtualObject(ros::NodeHandle& _nh, const std::string& _object_na
 			pcl::transformPointCloud(*point_cloud, *transformed_point_cloud, transform_2);  
 
 
-
-			// viewer = std::make_shared<pcl::visualization::PCLVisualizer>("3D Viewer");
-
 			angular_resolution_x = 0.1f;
 			angular_resolution_y = 0.1f;
 
@@ -82,33 +74,22 @@ VirtualObject::VirtualObject(ros::NodeHandle& _nh, const std::string& _object_na
 			compute_mesh_polygon(transformed_point_cloud, output, default_depth, default_solver_divide, default_iso_divide, default_point_weight);
 
 
-			ROS_INFO_STREAM(output.polygons.size());
+			vtkSmartPointer< vtkRenderWindow> vtk_render = viewer.getRenderWindow();
+			vtk_render->SetOffScreenRendering(1);
+
+
 
 			viewer.addPolygonMesh(output, "polygon");
 			viewer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_SHADING,
 														pcl::visualization::PCL_VISUALIZER_SHADING_FLAT, "polygon");
+
 			
-			// viewer.addCoordinateSystem (.0);
-			// viewer.removeOrientationMarkerWidgetAxes();
-			// viewer.setPosition(point_cloud->sensor_origin_[0], point_cloud->sensor_origin_[1]);
 
-			//set default viewing pose
-			// scene_sensor_pose = Eigen::Affine3f (Eigen::Translation3f (point_cloud->sensor_origin_[0],
-			// 			point_cloud->sensor_origin_[1],
-			// 			point_cloud->sensor_origin_[2])) *
-			// 			Eigen::Affine3f (Eigen::AngleAxisf(0, Eigen::Vector3f::UnitZ()));
-
-			// scene_sensor_pose = Eigen::Affine3f (Eigen::Translation3f (point_cloud->sensor_origin_[0] + origin_x_offset,
-			// 			point_cloud->sensor_origin_[1] + origin_y_offset,
-			// 			point_cloud->sensor_origin_[2] + origin_z_offset));
-
-			scene_sensor_pose = Eigen::Affine3f (Eigen::Translation3f (transformed_point_cloud->sensor_origin_[0] ,
-				transformed_point_cloud->sensor_origin_[1],
-				transformed_point_cloud->sensor_origin_[2] - 1)) *
+			scene_sensor_pose = Eigen::Affine3f (Eigen::Translation3f (transformed_point_cloud->sensor_origin_[0] +  origin_x_offset,
+				transformed_point_cloud->sensor_origin_[1] + origin_y_offset,
+				transformed_point_cloud->sensor_origin_[2] + origin_z_offset)) *
 				Eigen::Affine3f (Eigen::AngleAxisf(M_PI/2.0, Eigen::Vector3f::UnitZ()));
-			// scene_sensor_pose = Eigen::Affine3f (Eigen::Translation3f(0,0,0));
-			// scene_sensor_pose = Eigen::Affine3f::Identity ();
-
+			
 			range_image = std::make_unique<pcl::RangeImage>();
 			range_image->createFromPointCloud (*transformed_point_cloud, angular_resolution_x, angular_resolution_y,
 										pcl::deg2rad (360.0f), pcl::deg2rad (360.0f),
@@ -116,30 +97,33 @@ VirtualObject::VirtualObject(ros::NodeHandle& _nh, const std::string& _object_na
 
 			viewer.initCameraParameters();
 			set_viewer_pose(range_image->getTransformationToWorldSystem());
-			// set_viewer_pose(scene_sensor_pose);
 
-			// renderer_thread = std::thread(&VirtualObject::render_thread, this);
 
 			image_request_service = nh.advertiseService("model_view_" + object_name, &VirtualObject::model_view_callback, this);
 			mesh_publisher = image_transport.advertise("mesh_visualiser/" + object_name + "/render", 1);
 
+			//set up static transform
+			geometry_msgs::TransformStamped static_transformstamped;
+			static_transformstamped.header.stamp = ros::Time::now();
+			static_transformstamped.header.frame_id = "map";
+			static_transformstamped.child_frame_id = object_name;
 
+			static_transformstamped.transform.translation.x = global_x;
+			static_transformstamped.transform.translation.y = global_y;
+			static_transformstamped.transform.translation.z = 0;
 
-		}
+			static_transformstamped.transform.rotation.x = 0;
+			static_transformstamped.transform.rotation.y = 0;
+			static_transformstamped.transform.rotation.z = 0;
+			static_transformstamped.transform.rotation.w = 1;
 
+			static_broadcaster.sendTransform(static_transformstamped);
 
-		
+		}	
 
     }
 
-VirtualObject::~VirtualObject() {
-	should_run = false;
-	ros::Duration(1).sleep();
-
-	// if(renderer_thread.joinable()) {
-	// 	renderer_thread.join();
-	// }
-}
+VirtualObject::~VirtualObject() {}
 
 bool VirtualObject::model_view_callback(mesh_visualiser::RequestModelView::Request& request,
                                                 mesh_visualiser::RequestModelView::Response& response) 
@@ -218,14 +202,6 @@ void VirtualObject::compute_mesh_polygon(pcl::PointCloud<PointTypeColor>::Ptr in
 	pcl::PointCloud<pcl::PointNormal>::Ptr cloud_smoothed_normals(new pcl::PointCloud<pcl::PointNormal>());
 	pcl::concatenateFields(*normal_cloud, *cloud_normals, *cloud_smoothed_normals);
 
-	// pcl::Poisson<pcl::PointNormal> poisson;
-	// poisson.setDepth (depth);
-	// poisson.setSolverDivide (solver_divide);
-	// poisson.setIsoDivide (iso_divide);
-	// poisson.setPointWeight (point_weight);
-	// poisson.setInputCloud (cloud_smoothed_normals);
-
-	// poisson.reconstruct (output);
 
 	pcl::search::KdTree<pcl::PointNormal>::Ptr tree2(new pcl::search::KdTree<pcl::PointNormal>);
 	pcl::GridProjection<pcl::PointNormal> grid_projection;
@@ -251,69 +227,6 @@ void VirtualObject::set_viewer_pose(const Eigen::Affine3f& viewer_pose) {
 
 }
 
-// bool VirtualObject::create_render(tf2::Quaternion orientation, cv::Mat& image) {
-
-// 	Eigen::Quaternion<float> q(orientation.x(), orientation.y(), orientation.z(), orientation.w());
-// 	q.normalize();
-// 	ROS_INFO_STREAM("here6");
-
-// 	// scene_sensor_pose = Eigen::Affine3f (Eigen::Translation3f (point_cloud->sensor_origin_[0] + origin_x_offset,
-// 	// 					point_cloud->sensor_origin_[1] + origin_y_offset,
-// 	// 					point_cloud->sensor_origin_[2] + origin_z_offset))*
-// 	// 					Eigen::Affine3f (Eigen::AngleAxisf(M_PI, Eigen::Vector3f::UnitZ()));
-// 	// viewer.setPosition(point_cloud->sensor_origin_[0],point_cloud->sensor_origin_[1]);
-
-// 	// scene_sensor_pose = Eigen::Affine3f (Eigen::Translation3f (0,0,0));
-// 	// scene_sensor_pose = viewer.getViewerPose();
-// 	ROS_INFO_STREAM("here5");
-
-// 	// if (viewer->wasStopped()) {
-// 	// 	return false;
-// 	// }
-
-// 	// viewer_pose = 
-// 	// set_viewer_pose(scene_sensor_pose);
-// 	//
-	
-// 	vtkSmartPointer< vtkRenderWindow> vtk_render = viewer.getRenderWindow();
-// 	viewer.getRendererCollection()->GetFirstRenderer()->GetActiveCamera()->Azimuth(50);
-// 	// viewer.getRendererCollection()->GetFirstRenderer()->GetActiveCamera()->Up
-
-// 	viewer.spinOnce();
-
-// 	// vtk_render->GetRGBAPixelData(0, 0, 640, 460, 1);viewer
-// 	// vtk_render->SetOffScreenRendering(1);
-// 	vtkSmartPointer<vtkWindowToImageFilter> windowToImageFilter = vtkSmartPointer<vtkWindowToImageFilter>::New();
-
-// 	windowToImageFilter->SetInput(vtk_render);
-// 	windowToImageFilter->Update();
-// 	vtkSmartPointer<vtkImageData> image_data = windowToImageFilter->GetOutput();
-
-// 	ROS_INFO_STREAM("here3");
-
-// 	int dim[3];
-// 	image_data->GetDimensions(dim);
-
-// 	int imageWidth = dim[0];
-// 	int imageHeight = dim[1];
-
-
-// 	// 0, 0, this->w_ - 1, this->h_ - 1, true
-// 	unsigned char *pixels = vtk_render->GetRGBACharPixelData(0, 0, imageWidth - 1, imageHeight - 1, true);
-
-// 	ROS_INFO_STREAM("here4");
-
-
-// 	image = cv::Mat(imageHeight, imageWidth, CV_8UC4, pixels);
-// 	ROS_INFO_STREAM(rendered_image.rows << " " << rendered_image.cols);
-
-// 	cv::flip(image,image, 0);
-// 	cv::resize(image, image, cv::Size(640,480));
-
-// 	return true;
-// }
-
-
 
 bool VirtualObject::create_render(tf2::Quaternion orientation, cv::Mat& image) {
 
@@ -324,11 +237,6 @@ bool VirtualObject::create_render(tf2::Quaternion orientation, cv::Mat& image) {
 	// Eigen::AngleAxisf rotation(q);
 
 	Eigen::Vector3f euler = Eigen::Matrix3f(q).eulerAngles(0,1,2);
-	ROS_INFO_STREAM("E: r " << euler[0] << " p " << euler[1] << " y " << euler[2]);
-
-	
-
-	
 
 	Eigen::Affine3f transform = Eigen::Affine3f::Identity();
 
@@ -344,27 +252,14 @@ bool VirtualObject::create_render(tf2::Quaternion orientation, cv::Mat& image) {
 
 	ROS_INFO_STREAM(output.polygons.size());
 
+	vtkSmartPointer< vtkRenderWindow> vtk_render = viewer.getRenderWindow();
+	vtk_render->SetOffScreenRendering(1);
+
 	viewer.addPolygonMesh(output, "polygon");
-	// viewer.addCoordinateSystem (.0);
-	// viewer.removeOrientationMarkerWidgetAxes();
-	// viewer.setPosition(point_cloud->sensor_origin_[0], point_cloud->sensor_origin_[1]);
-
-	//set default viewing pose
-	// scene_sensor_pose = Eigen::Affine3f (Eigen::Translation3f (point_cloud->sensor_origin_[0],
-	// 			point_cloud->sensor_origin_[1],
-	// 			point_cloud->sensor_origin_[2])) *
-	// 			Eigen::Affine3f (Eigen::AngleAxisf(0, Eigen::Vector3f::UnitZ()));
-
-	// scene_sensor_pose = Eigen::Affine3f (Eigen::Translation3f (point_cloud->sensor_origin_[0] + origin_x_offset,
-	// 			point_cloud->sensor_origin_[1] + origin_y_offset,
-	// 			point_cloud->sensor_origin_[2] + origin_z_offset));
-
-	scene_sensor_pose = Eigen::Affine3f (Eigen::Translation3f (transformed_point_cloud->sensor_origin_[0] ,
-		transformed_point_cloud->sensor_origin_[1],
-		transformed_point_cloud->sensor_origin_[2] - 1)) *
-		Eigen::Affine3f (Eigen::AngleAxisf(M_PI/2.0, Eigen::Vector3f::UnitZ()));
-	// scene_sensor_pose = Eigen::Affine3f (Eigen::Translation3f(0,0,0));
-	// scene_sensor_pose = Eigen::Affine3f::Identity ();
+	// scene_sensor_pose = Eigen::Affine3f (Eigen::Translation3f (transformed_point_cloud->sensor_origin_[0] ,
+	// 	transformed_point_cloud->sensor_origin_[1],
+	// 	transformed_point_cloud->sensor_origin_[2] - 1)) *
+	// 	Eigen::Affine3f (Eigen::AngleAxisf(M_PI/2.0, Eigen::Vector3f::UnitZ()));
 
 	range_image->createFromPointCloud (*transformed_point_cloud, angular_resolution_x, angular_resolution_y,
 								pcl::deg2rad (360.0f), pcl::deg2rad (360.0f),
@@ -373,20 +268,12 @@ bool VirtualObject::create_render(tf2::Quaternion orientation, cv::Mat& image) {
 	viewer.initCameraParameters();
 	set_viewer_pose(range_image->getTransformationToWorldSystem());
 
-	// scene_sensor_pose = Eigen::Affine3f (Eigen::Translation3f (transformed_point_cloud->sensor_origin_[0] ,
-	// 	transformed_point_cloud->sensor_origin_[1],
-	// 	transformed_point_cloud->sensor_origin_[2] - 1)) *
-	// 	Eigen::Affine3f (Eigen::AngleAxisf(M_PI/2.0, Eigen::Vector3f::UnitZ()));
-
 	viewer.spinOnce();
     pcl_sleep (0.01);
 	
 
-	
 
-	vtkSmartPointer< vtkRenderWindow> vtk_render = viewer.getRenderWindow();
-	// vtk_render->GetRGBAPixelData(0, 0, 640, 460, 1);
-	// vtk_render->SetOffScreenRendering(1);
+
 	vtkSmartPointer<vtkWindowToImageFilter> windowToImageFilter = vtkSmartPointer<vtkWindowToImageFilter>::New();
 	windowToImageFilter->SetInput(vtk_render);
 	windowToImageFilter->Update();
@@ -402,7 +289,6 @@ bool VirtualObject::create_render(tf2::Quaternion orientation, cv::Mat& image) {
 	// 0, 0, this->w_ - 1, this->h_ - 1, true
 	unsigned char *pixels = vtk_render->GetRGBACharPixelData(0, 0, imageWidth - 1, imageHeight - 1, true);
 
-	ROS_INFO_STREAM("here4");
 
 
 	image = cv::Mat(imageHeight, imageWidth, CV_8UC4, pixels);
@@ -413,22 +299,7 @@ bool VirtualObject::create_render(tf2::Quaternion orientation, cv::Mat& image) {
 
 	viewer.removePolygonMesh("polygon");
 
-	// //transform back to original form?
-	// transform.rotate(Eigen::AngleAxisf (M_PI/2, Eigen::Vector3f::UnitZ()) * Eigen::AngleAxisf (M_PI, Eigen::Vector3f::UnitX()) );
-	// pcl::transformPointCloud(*point_cloud, *transformed_point_cloud, transform);  
 
 	return true;
 }
-
-// void VirtualObject::render_thread() {
-
-// 	while(should_run) {
-// 		boost::mutex::scoped_lock update_lock(pcl_visualiser_mutex);
-// 		ROS_INFO_STREAM("here");
-
-// 		create_render(last_orientation, rendered_image);
-// 		update_lock.unlock();
-
-// 	}
-// }
 

@@ -8,6 +8,6 @@ noise_level: 0
 min_range: 0
 border_size: 1
 
-origin_x_offset: 0.3
-origin_y_offset: 0.3
-origin_z_offset: -0.7
+origin_x_offset: 0
+origin_y_offset: 0
+origin_z_offset: -0.5

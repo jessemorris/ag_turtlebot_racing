@@ -120,8 +120,9 @@
 #include <memory>
 #include <thread>
 #include <mutex>
-// #include <open3d_conversions/open3d_conversions.h>
 
+#include <tf2_ros/static_transform_broadcaster.h>
+#include <geometry_msgs/TransformStamped.h>
 
 typedef pcl::PointXYZ PointType;
 typedef pcl::PointXYZRGB PointTypeColor;
@@ -165,7 +166,8 @@ class VirtualObject {
         pcl::PointCloud<PointTypeColor>::Ptr point_cloud;
 		pcl::PointCloud<PointTypeColor>::Ptr transformed_point_cloud;
 
-        // std::unique_ptr<pcl::PointCloud<PointTypeColor>> point_cloud;
+		tf2_ros::StaticTransformBroadcaster static_broadcaster;
+
 
 		float angular_resolution_x;
       	float angular_resolution_y;
@@ -189,9 +191,6 @@ class VirtualObject {
 		//view orientation
 		Eigen::Affine3f scene_sensor_pose;
 
-		// std::thread renderer_thread;
-		// std::mutex image_mutex;
-		bool should_run;
 
 		cv::Mat rendered_image;
 
@@ -200,7 +199,6 @@ class VirtualObject {
 	void set_viewer_pose(const Eigen::Affine3f& viewer_pose);
 	bool create_render(tf2::Quaternion orientation, cv::Mat& rendered_image);
 
-	// void render_thread();
 
 };
 
