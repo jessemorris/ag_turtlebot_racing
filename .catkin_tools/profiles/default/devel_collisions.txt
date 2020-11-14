@@ -1,2 +1,7 @@
+<<<<<<< HEAD
 /home/jesse/Code/src/ar_turtlebot_racing/devel/./cmake.lock 445
 /home/oliver/Documents/ar_turtlebot_racing/devel/./cmake.lock 9
+=======
+/home/jesse/Code/src/ar_turtlebot_racing/devel/./cmake.lock 47
+/home/talin/ar_turtlebot_racing/devel/./cmake.lock 391
+>>>>>>> Talin

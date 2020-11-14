@@ -1,0 +1,22 @@
+#colour thresholding
+
+blue_threshold:
+  min_threshold_1:
+    - 22
+    - 0
+    - 157
+  max_threshold_1:
+    - 97
+    - 76
+    - 255
+
+  min_threshold_2:
+    - 76
+    - 22
+    - 255
+  max_threshold_2:
+    - 255
+    - 255
+    - 255
+
+min_area: 100

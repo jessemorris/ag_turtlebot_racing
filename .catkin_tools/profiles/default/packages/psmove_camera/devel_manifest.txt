@@ -1,0 +1,6 @@
+psmove_camera
+/home/talin/ar_turtlebot_racing/devel/.private/psmove_camera/cmake.lock /home/talin/ar_turtlebot_racing/devel/./cmake.lock
+/home/talin/ar_turtlebot_racing/devel/.private/psmove_camera/lib/psmove_camera/psmove_camera_node /home/talin/ar_turtlebot_racing/devel/lib/psmove_camera/psmove_camera_node
+/home/talin/ar_turtlebot_racing/devel/.private/psmove_camera/lib/pkgconfig/psmove_camera.pc /home/talin/ar_turtlebot_racing/devel/lib/pkgconfig/psmove_camera.pc
+/home/talin/ar_turtlebot_racing/devel/.private/psmove_camera/share/psmove_camera/cmake/psmove_cameraConfig-version.cmake /home/talin/ar_turtlebot_racing/devel/share/psmove_camera/cmake/psmove_cameraConfig-version.cmake
+/home/talin/ar_turtlebot_racing/devel/.private/psmove_camera/share/psmove_camera/cmake/psmove_cameraConfig.cmake /home/talin/ar_turtlebot_racing/devel/share/psmove_camera/cmake/psmove_cameraConfig.cmake
