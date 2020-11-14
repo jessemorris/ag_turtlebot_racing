@@ -15,7 +15,8 @@ find_package(catkin REQUIRED COMPONENTS
 	image_transport
 	std_msgs
 	cv_bridge
-	sensor_msgs)
+	sensor_msgs
+	geometry_msgs)
 
 find_package(OpenCV)
 
@@ -36,6 +37,7 @@ catkin_package(
 	nav_msgs
 	sensor_msgs
 	cv_bridge
+	mesh_visualiser
 )
 
 

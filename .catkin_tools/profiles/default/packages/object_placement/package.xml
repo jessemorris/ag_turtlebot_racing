@@ -59,7 +59,8 @@
   <depend>image_transport</depend>
   <depend>tf2_ros</depend>
   <depend>tf2_sensor_msgs</depend>
-
+  <depend>mesh_visualiser</depend>
+  <depend>geometry_msgs</depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

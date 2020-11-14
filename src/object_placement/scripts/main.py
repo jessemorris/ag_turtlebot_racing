@@ -6,6 +6,8 @@ import ros_numpy
 from sensor_msgs.msg import Image, CameraInfo
 import numpy as np
 import math
+from mesh_visualiser.srv import RequestModelView
+from geometry_msgs.msg import Quaternion
 
 class ObjectPlacement():
 
@@ -14,7 +16,18 @@ class ObjectPlacement():
 
         print(self.input_image_topic)
 
+
+        rospy.wait_for_service('mesh_visualiser/model_view_bunny')
+
+        self.model_view_service = rospy.ServiceProxy('mesh_visualiser/model_view_bunny',RequestModelView)
+
+
+
         rospy.Subscriber(self.input_image_topic,Image,self.imageCallback)
+
+        self.pub = rospy.Publisher('output_overlayed_image', Image)
+
+
 
         self.cv_image = None
         self.principal_point_x = 640/2
@@ -120,11 +133,41 @@ class ObjectPlacement():
         # for each of the objects in the world frame
         self.getPixelCoordinates()
 
+        quaternion = Quaternion(0, 0, 0, 1)
+        response = self.model_view_service(quaternion)
 
+
+        model_image = ros_numpy.numpify(response.image)[... , :4][...,::-1]
+        print(model_image.shape)
+
+        h, w, c = self.cv_image.shape
+
+
+        result = np.zeros((h, w, 3), np.uint8)
+
+
+        # st = time()
+        alpha = model_image[:, :, 3] / 255.0
+        result[:, :, 0] = (1. - alpha) * self.cv_image[:, :, 0] + alpha * model_image[:, :, 0]
+        result[:, :, 1] = (1. - alpha) * self.cv_image[:, :, 1] + alpha * model_image[:, :, 1]
+        result[:, :, 2] = (1. - alpha) * self.cv_image[:, :, 2] + alpha * model_image[:, :, 2]
+        # end = time() - st
+        # print(end)
+
+
+        output_image_message = ros_numpy.msgify(Image, result,encoding = '8UC3')
+        # cv2.imshow("result", result)
+        # cv2.waitKey(0)
+        # cv2.destroyAllWindows()
+
+
+        self.pub.publish(output_image_message)
 
 
 if __name__ == '__main__':
     # listener()
+
+
     rospy.init_node('object_placement')
     obj = ObjectPlacement()
 
