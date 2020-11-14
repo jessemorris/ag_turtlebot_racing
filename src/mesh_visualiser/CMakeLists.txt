@@ -4,6 +4,9 @@ project(mesh_visualiser)
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
 
+set(CMAKE_CXX_STANDARD 14)
+
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -24,11 +27,11 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(OpenCV)
 find_package(Eigen3 REQUIRED)
 find_package(PCL REQUIRED)
-find_package(Open3D REQUIRED)
+#find_package(Open3D REQUIRED)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${Open3D_C_FLAGS}")
+#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${Open3D_C_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Open3D_CXX_FLAGS}")
-link_directories(${Open3D_LIBRARY_DIRS})
+#link_directories(${Open3D_LIBRARY_DIRS})
 
 ## Setup include directories
 include_directories(
@@ -36,7 +39,7 @@ include_directories(
 #  include/${PROJECT_NAME}
   include
    ${PCL_INCLUDE_DIRS}
-   ${Open3D_INCLUDE_DIRS}
+   #${Open3D_INCLUDE_DIRS}
 )
 
 
@@ -167,15 +170,15 @@ message("opengl include ${OPENGL_INCLUDE_DIRS}")
 include_directories(
     include
     ${catkin_INCLUDE_DIRS}
-	${Open3D_INCLUDE_DIRS}
+	#${Open3D_INCLUDE_DIRS}
 )
 
 
 add_executable(${PROJECT_NAME}_node
 		src/main.cpp
 		src/virtual_object.cpp
-	
-		
+
+
 )
 
 
