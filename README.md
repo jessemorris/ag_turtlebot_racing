@@ -9,6 +9,18 @@
 sudo apt-get install python-catkin-tools
 ```
 
+# PCL 1.9 # 
+```
+git clone https://github.com/PointCloudLibrary/pcl.git
+cd pcl
+git checkout pcl-1.9.0
+mkdir build && cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+make -j8
+sudo make install
+sudo ldconfig
+```
+
 ## ROS Networking Setup ##
 
 ### On the Turtlebot ###
