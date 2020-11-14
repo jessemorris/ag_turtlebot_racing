@@ -39,9 +39,9 @@ class ObjectPlacement():
 
     def getPixelCoordinates(self):
         #p = point in world frame [x,y,z,0]
-        x = 0
-        y = 0
-        z = 0.5
+        x = 5
+        y = 5
+        z = 10
         p = np.array([x,y,z,0])
 
         # R = camera rotation matrix
@@ -74,7 +74,7 @@ class ObjectPlacement():
         test = np.matmul(K,extrinsic_matrix)
 
         camera_frame = np.matmul(np.matmul(K,extrinsic_matrix),np.transpose(p))
-        print(camera_frame)
+        # print(camera_frame)
 
 
         #these are the undistored points
@@ -82,7 +82,8 @@ class ObjectPlacement():
         v = np.divide(camera_frame[1],camera_frame[2])
 
 
-
+        print("u {}".format(u))
+        print("v {}".format(v))
 
         #u0 = principal_point x
         #v0 = principal_point y
@@ -114,7 +115,7 @@ class ObjectPlacement():
 
         # returns image as a numpy array
         self.cv_image = ros_numpy.numpify(data)[... , :3][...,::-1]
-        print(self.cv_image.shape)
+        # print(self.cv_image.shape)
 
         # for each of the objects in the world frame
         self.getPixelCoordinates()
