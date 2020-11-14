@@ -274,14 +274,6 @@ bool Turtlebot::std_remove_outlier_pose(double& x_average, double& y_average,
 
 
 
-
-
-
-
-
-
-
-
     return true;
 
     }
