@@ -1,0 +1,12 @@
+<launch>
+
+    <arg name="config_file" default="mesh_visualiser_config.yaml"/>
+
+    <node pkg="mesh_visualiser" type="mesh_visualiser_node" name="mesh_visualiser" output="screen">
+    <rosparam command="load" file="$(find mesh_visualiser)/config/$(arg config_file)"/>
+
+    <!-- set a private parameter for the node -->
+    
+    </node> 
+    
+</launch>
