@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>psmove_camera</name>
+  <name>mesh_visualiser</name>
   <version>0.0.0</version>
-  <description>The psmove_camera package</description>
+  <description>The mesh_visualiser package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
@@ -55,10 +55,14 @@
   <depend>std_msgs</depend>
   <depend>nav_msgs</depend>
   <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
   <depend>cv_bridge</depend>
   <depend>image_transport</depend>
   <depend>tf2_ros</depend>
+  <depend>tf2</depend>
   <depend>tf2_sensor_msgs</depend>
+  <depend>message_runtime</depend>
+
 
 
 

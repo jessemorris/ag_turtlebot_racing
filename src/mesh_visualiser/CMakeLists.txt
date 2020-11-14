@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(map_analyse)
+project(mesh_visualiser)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -9,40 +9,42 @@ project(map_analyse)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
 	roscpp
-	tf2
 	tf2_ros
 	tf2_sensor_msgs
 	image_transport
 	std_msgs
 	cv_bridge
-	sensor_msgs)
+	sensor_msgs
+	tf2_ros
+	tf2
+	tf2_sensor_msgs
+	#open3d_conversions
+	)
 
 find_package(OpenCV)
+find_package(Eigen3 REQUIRED)
+find_package(PCL REQUIRED)
+find_package(Open3D REQUIRED)
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${Open3D_C_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Open3D_CXX_FLAGS}")
+link_directories(${Open3D_LIBRARY_DIRS})
 
 ## Setup include directories
-include_directories(${catkin_INCLUDE_DIRS},
+include_directories(
+	${catkin_INCLUDE_DIRS},
 #  include/${PROJECT_NAME}
-  include)
-
-catkin_package(
-  LIBRARIES ${PROJECT_NAME}
-#	INCLUDE_DIRS include
-	CATKIN_DEPENDS
-	roscpp
-	tf2
-	image_transport
-	std_msgs
-	tf2_ros
-	tf2_sensor_msgs
-	nav_msgs
-	sensor_msgs
-	cv_bridge
+  include
+   ${PCL_INCLUDE_DIRS}
+   ${Open3D_INCLUDE_DIRS}
 )
 
 
 
+
+
 ## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
+find_package(Boost REQUIRED COMPONENTS system)
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -82,11 +84,11 @@ catkin_package(
 # )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
+add_service_files(
+   FILES
 #   Service1.srv
-#   Service2.srv
-# )
+   RequestModelView.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -95,11 +97,29 @@ catkin_package(
 #   Action2.action
 # )
 
+
+
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+generate_messages(DEPENDENCIES actionlib_msgs geometry_msgs std_msgs sensor_msgs)
+
+
+catkin_package(
+  LIBRARIES ${PROJECT_NAME}
+#	INCLUDE_DIRS include
+	CATKIN_DEPENDS std_msgs geometry_msgs message_runtime
+	roscpp
+	image_transport
+	std_msgs
+	tf2_ros
+	tf2_sensor_msgs
+	nav_msgs
+	sensor_msgs
+	cv_bridge
+	#open3d_conversions
+)
+
+
+
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -141,28 +161,33 @@ catkin_package(
 ## Build ##
 ###########
 
-
+message("opengl include ${OPENGL_INCLUDE_DIRS}")
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
     include
     ${catkin_INCLUDE_DIRS}
+	${Open3D_INCLUDE_DIRS}
 )
 
 
 add_executable(${PROJECT_NAME}_node
 		src/main.cpp
-		src/map_analyse.cpp
-		src/turtlebot.cpp
-		#src/orb_tracker.cpp
+		src/virtual_object.cpp
+	
+		
 )
-
 
 
 
 target_link_libraries(${PROJECT_NAME}_node
 		${catkin_LIBRARIES}
-		${OpenCV_LIBS})
+		${OpenCV_LIBS}
+		${PCL_LIBRARIES}
+		#${OPENGL_LIBRARIES}
+		Eigen3::Eigen
+		#${Open3D_LIBRARIES}
+)
 
 if(catkin_EXPORTED_LIBRARIES)
   add_dependencies(${PROJECT_NAME}_node
