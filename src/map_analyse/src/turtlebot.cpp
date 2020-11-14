@@ -93,7 +93,8 @@ void Turtlebot::update_pose_camera(geometry_msgs::PoseStamped& pose) {
     if ( camera_frame_history.size() > 5) {
 
         // geometry_msgs::PoseStamped pose_filtered;
-        // std_remove_outlier_pose(x_average, y_average, pitch_average_sum, camera_frame_history);
+        std_remove_outlier_pose(x_average, y_average, pitch_average_sum, camera_frame_history);
+
 
 
         std::unique_ptr<geometry_msgs::PoseStamped> filtered_pose = filter_poses(x_average, y_average, vec);
@@ -192,6 +193,7 @@ bool Turtlebot::std_remove_outlier_pose(double& x_average, double& y_average,
         float y_position_sum = 0;
         float pitch_sum = 0;
 
+        // ROS_INFO_STREAM("size: " << x_positions.size());
 
         for (int i = 0; i < x_positions.size(); i++) {
 
@@ -199,9 +201,9 @@ bool Turtlebot::std_remove_outlier_pose(double& x_average, double& y_average,
             x_position_sum += pow(x_positions[i] - (float)x_average, 2.0);
             y_position_sum += pow(y_positions[i] - (float)y_average, 2.0);
 
-            ROS_INFO_STREAM("pitch_val[i]: " << pitch_val[i]);
-            ROS_INFO_STREAM("x_pos[i]: " << x_positions[i]);
-            ROS_INFO_STREAM("y_pos[i]: " << y_positions[i]);
+            // ROS_INFO_STREAM("pitch_val[i]: " << pitch_val[i]);
+            // ROS_INFO_STREAM("x_pos[i]: " << x_positions[i]);
+            // ROS_INFO_STREAM("y_pos[i]: " << y_positions[i]);
 
 
         }
@@ -224,6 +226,8 @@ bool Turtlebot::std_remove_outlier_pose(double& x_average, double& y_average,
         bool upper_flag = false;
         bool lower_flag = false;
         bool pitch_bool = false;
+        bool x_bool = true;
+        bool y_bool = true;
 
         if (upper_delta > M_PI) {
             upper_delta = upper_delta - 2*M_PI;
@@ -250,26 +254,43 @@ bool Turtlebot::std_remove_outlier_pose(double& x_average, double& y_average,
                 pitch_bool = true;
             }
 
+        float const_val = 0.5;
 
-        if (x_average-x_amt*x_std < x_positions.back() && x_positions.back() < x_average+x_amt*x_std) {
+        if (x_average-x_amt*x_std-const_val < x_positions.back() &&
+                x_positions.back() < x_average+x_amt*x_std+const_val) {
 
-            ROS_INFO_STREAM("x average within standard deviation");
+                ROS_INFO_STREAM("x average within standard deviation");
+                x_bool = false;
+        }
 
-            if (y_average-y_amt*y_std < y_positions.back() && y_positions.back() < y_average+y_amt*y_std) {
+        if (y_average-y_amt*y_std-const_val < y_positions.back() &&
+            y_positions.back() < y_average+y_amt*y_std+const_val) {
 
                 ROS_INFO_STREAM("y average within standard deviation");
-
-                if (pitch_bool) {
-
-                    ROS_INFO_STREAM("pitch within standard deviation");
-
-                    camera_frame_history.pop_back();
-                    x_positions.pop_back();
-                    y_positions.pop_back();
-                    pitch_val.pop_back();
-                }
-            }
+                y_bool = false;
         }
+
+        if ( x_bool || y_bool  ) {
+
+            ROS_INFO_STREAM("X OR Y OUTSIDE OF STD");
+
+            // camera_frame_history.pop_back();
+            // x_positions.pop_back();
+            // y_positions.pop_back();
+            // pitch_val.pop_back();
+
+        }
+
+
+                    // if (pitch_bool) {
+                    //
+                    //     ROS_INFO_STREAM("pitch within standard deviation");
+                    //
+
+                    // }
+
+
+
 
 
 

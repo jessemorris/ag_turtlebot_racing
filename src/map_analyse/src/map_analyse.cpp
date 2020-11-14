@@ -187,8 +187,12 @@ bool MapAnalyse::get_turtlebot_pose(cv::Mat& src, geometry_msgs::PoseStamped& po
         double area = cv::contourArea(contours[i]);
         // ROS_INFO_STREAM("area " << area);
 
+        // ROS_INFO_STREAM("area: " << area);
+
 
         if (area > min_area) {
+
+            // ROS_INFO_STREAM("entered min area");
 
             moments[i] = cv::moments(contours[i]);
 
@@ -457,6 +461,12 @@ bool MapAnalyse::get_turtlebot_pose(cv::Mat& src, geometry_msgs::PoseStamped& po
                     pose_stamped.header = header;
                 }
             }
+        }
+
+
+        else {
+
+
         }
     }
 
