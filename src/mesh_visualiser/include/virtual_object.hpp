@@ -137,7 +137,6 @@ class VirtualObject {
         void compute_mesh_polygon(const pcl::PointCloud<PointTypeColor>::Ptr input, pcl::PolygonMesh &output,
         	int depth, int solver_divide, int iso_divide, float point_weight);
 
-        // pcl::PointCloud<pcl::PointXYZRGB>::Ptr extract_mesh(const std::string& _object_name);
         bool model_view_callback(mesh_visualiser::RequestModelView::Request& request,
                                                 mesh_visualiser::RequestModelView::Response& response);
 

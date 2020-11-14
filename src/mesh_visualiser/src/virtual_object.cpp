@@ -16,7 +16,7 @@ VirtualObject::VirtualObject(ros::NodeHandle& _nh, const std::string& _object_na
 		global_x(_global_x),
 		global_y(_global_y),
         object_name(_object_name),
-		viewer("3D viewer"),
+		viewer(object_name + " Viewer"),
 		cloud(new pcl::PCLPointCloud2),
 		point_cloud(new pcl::PointCloud<PointTypeColor>()),
 		transformed_point_cloud(new pcl::PointCloud<PointTypeColor>()),
@@ -46,15 +46,17 @@ VirtualObject::VirtualObject(ros::NodeHandle& _nh, const std::string& _object_na
 		resource_path = ros::package::getPath("mesh_visualiser") + std::string("/pc_resources");
 		file_path = resource_path + "/" + object_name + file_suffix;
 
+		int result = -1;
 
-		// ROS_INFO_STREAM("made point clounds");
-
-
-
-		if (pcl::io::loadPCDFile(file_path, *cloud) == -1)	{
-			ROS_WARN_STREAM("Was not able to open file " <<file_path); 
+		if (file_suffix == ".pcd") {
+			result = pcl::io::loadPCDFile(file_path, *cloud);
 		}
-
+		else if(file_suffix == ".ply") {
+			result = pcl::io::loadPLYFile(file_path, *cloud);
+		}
+		if (result == -1) {
+			ROS_INFO_STREAM("File " << file_path << " could not be loaded");
+		}
 		else {
 			ROS_INFO_STREAM("File " << object_name << " was loaded");
 			pcl::fromPCLPointCloud2 (*cloud, *point_cloud);
@@ -79,9 +81,9 @@ VirtualObject::VirtualObject(ros::NodeHandle& _nh, const std::string& _object_na
 
 
 
-			viewer.addPolygonMesh(output, "polygon");
+			viewer.addPolygonMesh(output,object_name);
 			viewer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_SHADING,
-														pcl::visualization::PCL_VISUALIZER_SHADING_FLAT, "polygon");
+														pcl::visualization::PCL_VISUALIZER_SHADING_FLAT,object_name);
 
 			
 
@@ -91,6 +93,7 @@ VirtualObject::VirtualObject(ros::NodeHandle& _nh, const std::string& _object_na
 				Eigen::Affine3f (Eigen::AngleAxisf(M_PI/2.0, Eigen::Vector3f::UnitZ()));
 			
 			range_image = std::make_unique<pcl::RangeImage>();
+
 			range_image->createFromPointCloud (*transformed_point_cloud, angular_resolution_x, angular_resolution_y,
 										pcl::deg2rad (360.0f), pcl::deg2rad (360.0f),
 										scene_sensor_pose, pcl::RangeImage::CAMERA_FRAME, noise_level, min_range, border_size);
@@ -99,7 +102,7 @@ VirtualObject::VirtualObject(ros::NodeHandle& _nh, const std::string& _object_na
 			set_viewer_pose(range_image->getTransformationToWorldSystem());
 
 
-			image_request_service = nh.advertiseService("model_view_" + object_name, &VirtualObject::model_view_callback, this);
+			image_request_service = nh.advertiseService("mesh_visualiser/model_view_" + object_name, &VirtualObject::model_view_callback, this);
 			mesh_publisher = image_transport.advertise("mesh_visualiser/" + object_name + "/render", 1);
 
 			//set up static transform
@@ -132,21 +135,15 @@ bool VirtualObject::model_view_callback(mesh_visualiser::RequestModelView::Reque
 		cv::Mat image;	
 
     	tf2::convert(request.orientation, last_orientation);
-
-		//wait for renderer thread to run
 		ros::Duration(0.5).sleep();
 
 		create_render(last_orientation, image);
 
 		sensor_msgs::ImagePtr img_msg;
-		// image_mutex.lock();
 		img_msg = cv_bridge::CvImage(std_msgs::Header(), "bgra8", image).toImageMsg();
-		ROS_INFO_STREAM(image.rows << " " << image.cols);
 
-		// image_test_pub.publish(img_msg);
 		mesh_publisher.publish(img_msg);
 		response.image = *img_msg;
-		// image_mutex.unlock();
 
 		return true;
 
@@ -161,15 +158,13 @@ void VirtualObject::compute_mesh_polygon(pcl::PointCloud<PointTypeColor>::Ptr in
 
 	pcl::PointCloud<pcl::PointNormal>::Ptr xyz_cloud (new pcl::PointCloud<pcl::PointNormal> ());
 	pcl::PointCloud<pcl::PointXYZ>::Ptr normal_cloud(new pcl::PointCloud<pcl::PointXYZ>);
-	// pcl::fromPCLPointCloud2 (*input, *xyz_cloud);
-	// pcl::fromPCLPointCloud2 (*input, *normal_cloud);
+	
+
 	pcl::copyPointCloud(*input, *xyz_cloud);
   	pcl::copyPointCloud(*input, *normal_cloud);
 
-	// pcl::NormalEstimationOMP<pcl::PointXYZ, pcl::Normal> ne;
 	pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
 	ne.setInputCloud (normal_cloud);
-	// ne.setViewPoint(centroid[0], centroid[1], centroid[2]);
 
 	// Create an empty kdtree representation, and pass it to the normal estimation object.
 	// Its content will be filled inside the object, based on the given input dataset (as no other search surface is given).
@@ -185,8 +180,8 @@ void VirtualObject::compute_mesh_polygon(pcl::PointCloud<PointTypeColor>::Ptr in
 	// Compute the features
 	ne.compute (*cloud_normals);
 	ROS_INFO_STREAM("computed cloud normals size " << cloud_normals->size());
-	std::cout << "normal estimation complete" << std::endl;
-	std::cout << "reverse normals' direction" << std::endl;
+	// std::cout << "normal estimation complete" << std::endl;
+	// std::cout << "reverse normals' direction" << std::endl;
 
 	for(size_t i = 0; i < cloud_normals->size(); ++i){
 		cloud_normals->points[i].normal_x *= -1;
@@ -234,7 +229,7 @@ bool VirtualObject::create_render(tf2::Quaternion orientation, cv::Mat& image) {
 	Eigen::Quaternion<float> q(orientation.x(), orientation.y(), orientation.z(), orientation.w());
 	q.normalize();
 
-	// Eigen::AngleAxisf rotation(q);
+	viewer.removePolygonMesh(object_name);
 
 	Eigen::Vector3f euler = Eigen::Matrix3f(q).eulerAngles(0,1,2);
 
@@ -242,25 +237,21 @@ bool VirtualObject::create_render(tf2::Quaternion orientation, cv::Mat& image) {
 
 	transform.rotate(Eigen::AngleAxisf (euler[0], Eigen::Vector3f::UnitX()) * 
 					Eigen::AngleAxisf (euler[1], Eigen::Vector3f::UnitY()) *
-					Eigen::AngleAxisf (euler[2], Eigen::Vector3f::UnitZ()) );
-	// transform.rotate(rotation);
+					Eigen::AngleAxisf (euler[2], Eigen::Vector3f::UnitZ()));
+
 	pcl::transformPointCloud(*point_cloud, *transformed_point_cloud, transform);  
 
-
+	//must re-render from orientated point cloud
 	compute_mesh_polygon(transformed_point_cloud, output, default_depth, default_solver_divide, default_iso_divide, default_point_weight);
 
 
 	ROS_INFO_STREAM(output.polygons.size());
 
 	vtkSmartPointer< vtkRenderWindow> vtk_render = viewer.getRenderWindow();
-	vtk_render->SetOffScreenRendering(1);
+	// vtk_render->SetOffScreenRendering(1);
 
-	viewer.addPolygonMesh(output, "polygon");
-	// scene_sensor_pose = Eigen::Affine3f (Eigen::Translation3f (transformed_point_cloud->sensor_origin_[0] ,
-	// 	transformed_point_cloud->sensor_origin_[1],
-	// 	transformed_point_cloud->sensor_origin_[2] - 1)) *
-	// 	Eigen::Affine3f (Eigen::AngleAxisf(M_PI/2.0, Eigen::Vector3f::UnitZ()));
-
+	viewer.addPolygonMesh(output, object_name);
+	
 	range_image->createFromPointCloud (*transformed_point_cloud, angular_resolution_x, angular_resolution_y,
 								pcl::deg2rad (360.0f), pcl::deg2rad (360.0f),
 								scene_sensor_pose, pcl::RangeImage::CAMERA_FRAME, noise_level, min_range, border_size);
@@ -285,19 +276,16 @@ bool VirtualObject::create_render(tf2::Quaternion orientation, cv::Mat& image) {
 	int imageWidth = dim[0];
 	int imageHeight = dim[1];
 
-
-	// 0, 0, this->w_ - 1, this->h_ - 1, true
 	unsigned char *pixels = vtk_render->GetRGBACharPixelData(0, 0, imageWidth - 1, imageHeight - 1, true);
 
 
 
 	image = cv::Mat(imageHeight, imageWidth, CV_8UC4, pixels);
-	ROS_INFO_STREAM(image.rows << " " << image.cols);
+	// ROS_INFO_STREAM(image.rows << " " << image.cols);
 
 	cv::flip(image,image, 0);
 	cv::resize(image, image, cv::Size(640,480));
 
-	viewer.removePolygonMesh("polygon");
 
 
 	return true;
