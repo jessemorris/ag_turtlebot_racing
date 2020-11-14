@@ -8,11 +8,12 @@ import numpy as np
 import math
 from mesh_visualiser.srv import RequestModelView
 from geometry_msgs.msg import Quaternion
+import tf
 
 class ObjectPlacement():
 
     def __init__(self):
-        self.input_image_topic = rospy.get_param("object_placement/input_camera_topic");
+        self.input_image_topic = rospy.get_param("object_placement/input_camera_topic")
 
         print(self.input_image_topic)
 
@@ -20,10 +21,11 @@ class ObjectPlacement():
         rospy.wait_for_service('mesh_visualiser/model_view_bunny')
 
         self.model_view_service = rospy.ServiceProxy('mesh_visualiser/model_view_bunny',RequestModelView)
+        self.tf_listener = tf.TransformListener()
 
 
 
-        rospy.Subscriber(self.input_image_topic,Image,self.imageCallback)
+        rospy.Subscriber(self.input_image_topic,Image,self.imageCallback, queue_size=1)
 
         self.pub = rospy.Publisher('output_overlayed_image', Image)
 
@@ -46,47 +48,43 @@ class ObjectPlacement():
         self.k2 = self.distortion_array[3]
         self.k3 = self.distortion_array[4]
 
+        #K = intrinsic matrix
+        self.K = np.array([[519.566467, 0.000000, 313.837735, 0.000000],
+            [0.000000, 522.066406, 248.386084, 0.000000],
+            [0.000000, 0.000000, 1.000000, 0.000000]])
 
 
 
 
-    def getPixelCoordinates(self):
+
+    # goes from x,y,z world to pixel frame
+    def getPixelCoordinates(self, x_world, y_world, z_world, camera_translation, camera_rotation):
         #p = point in world frame [x,y,z,0]
-        x = 5
-        y = 5
-        z = 10
-        p = np.array([x,y,z,0])
+        # x = 5
+        # y = 5
+        # z = 10
+        world_frame_point = np.array([x_world,y_world,z_world,0])
 
         # R = camera rotation matrix
         # T = camera translation matrix
-        R = np.identity(3)
+        # R = np.identity(3)
 
-        T = np.array([[0],[0],[0]])
+        # T = np.array([[0],[0],[0]])
 
-
-
-        #K = intrinsic matrix
-        K= np.array([[519.566467, 0.000000, 313.837735, 0.000000],
-        [0.000000, 522.066406, 248.386084, 0.000000],
-        [0.000000, 0.000000, 1.000000, 0.000000]])
 
 
 
 
         #extrinsic_matrix = [R', T'; 0,0,0,1]
-        extrinsic_matrix = np.concatenate((R,T),axis = 1)
-        test = np.array([[0,0,0,1]])
+        extrinsic_matrix = np.concatenate((camera_rotation,camera_translation),axis = 1)
+        padding = np.array([[0,0,0,1]])
 
-        extrinsic_matrix = np.concatenate((extrinsic_matrix,test))
-
-
-        #
-        # np.array[[R,np.transpose(T)],[0,0,0,1]])
+        extrinsic_matrix = np.concatenate((extrinsic_matrix,padding))
 
 
-        test = np.matmul(K,extrinsic_matrix)
+        # test = np.matmul(K,extrinsic_matrix)
 
-        camera_frame = np.matmul(np.matmul(K,extrinsic_matrix),np.transpose(p))
+        camera_frame = np.matmul(np.matmul(K,extrinsic_matrix),np.transpose(world_frame_point))
         # print(camera_frame)
 
 
@@ -115,12 +113,10 @@ class ObjectPlacement():
         yd = y*(1+self.k1*r**2 +self.k2*r**4 + self.k3*r**6)+self.k4*(r**2+2*y**2)+2*self.k5*x*y;
 
         #distorted pixel coordinates
-        ud = self.fx*xd + self.u0;
-        vd= self.fy*yd + self.v0;
+        ud = self.fx*xd + self.u0
+        vd= self.fy*yd + self.v0
 
-        print(ud)
-        print(vd)
-
+        return [ud, vd]
 
 
 
@@ -130,8 +126,26 @@ class ObjectPlacement():
         self.cv_image = ros_numpy.numpify(data)[... , :3][...,::-1]
         # print(self.cv_image.shape)
 
+        try:
+            self.tf_listener.waitForTransform("turtlebot_image_frame", "map",rospy.Time(), rospy.Duration(secs=4) )
+            translation_turtlebot, rotation_turtlebot = self.tf_listener.lookupTransform("turtlebot_image_frame", "map",rospy.Time())
+            print(translation_turtlebot)
+            print(rotation_turtlebot)
+        except Exception as e:
+            rospy.logwarn("Could not get map to turtlbot image frame transform")
+            return False
+
+        try:
+            self.tf_listener.waitForTransform("bunny", "map",rospy.Time(), rospy.Duration(secs=4) )
+            translation_object, rotation_object = self.tf_listener.lookupTransform("bunny", "map",rospy.Time())
+        except Exception as e:
+            rospy.logwarn("Could not get map to bunny frame transform")
+            return False
+
         # for each of the objects in the world frame
-        self.getPixelCoordinates()
+        x_world, y_world, z_world = translation_object
+        print(translation_object)
+        image_center_x, image_center_y = self.getPixelCoordinates(x_world, y_world, z_world,translation_turtlebot, rotation_turtlebot)
 
         quaternion = Quaternion(0, 0, 0, 1)
         response = self.model_view_service(quaternion)
