@@ -25,10 +25,10 @@ red_threshold:
   min_threshold_1:
     - 0
     - 0
-    - 180
+    - 227
   max_threshold_1:
-    - 195
-    - 44
+    - 206
+    - 180
     - 255
 
   min_threshold_2:

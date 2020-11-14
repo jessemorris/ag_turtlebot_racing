@@ -68,7 +68,9 @@ MapAnalyse::MapAnalyse(ros::NodeHandle& _nh):
         transform.header.frame_id = "/map";
         transform.child_frame_id = "/turtlebot_image_frame";
 
-        transform.transform.translation.x = -CAMERA_WIDTH_NORM/2.0;
+        ROS_INFO_STREAM("new thing here\n");
+
+        transform.transform.translation.x = CAMERA_WIDTH_NORM/2.0;
         transform.transform.translation.y = -CAMERA_HEIGHT_NORM/2.0;
         transform.transform.translation.z = 0;
 
@@ -130,10 +132,16 @@ bool MapAnalyse::get_turtlebot_pose(cv::Mat& src, geometry_msgs::PoseStamped& po
 
     //close small holes
     cv::Mat morph_kernel_open = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5,5), cv::Point(-1,-1));
-    cv::Mat morph_kernel_close = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(17,17), cv::Point(-1,-1));
+    cv::Mat morph_kernel_close = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(1,1), cv::Point(-1,-1));
+    cv::Mat morph_kernel_open_last = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(15,15), cv::Point(-1,-1));
+
 
     cv::morphologyEx(mask, mask, cv::MORPH_OPEN, morph_kernel_open);
     cv::morphologyEx(mask, mask, cv::MORPH_CLOSE, morph_kernel_close);
+    cv::morphologyEx(mask, mask, cv::MORPH_OPEN, morph_kernel_open_last);
+
+
+
 
     // cv::Mat hit_miss_kernal = (cv::Mat_<int>(3, 3) <<
     //     0, 1, 0,
@@ -402,23 +410,28 @@ bool MapAnalyse::get_turtlebot_pose(cv::Mat& src, geometry_msgs::PoseStamped& po
 
                     }
 
+
+                    // bottom left quadrant
                     else if (x_val < 0 && y_val < 0) {
-                        theta = std::atan(abs(y_val/x_val));
+                        theta = M_PI-std::atan(abs(y_val/x_val));
                         // ROS_INFO_STREAM("\n4\n");
                     }
 
+                    // bottom right quadrant
                     else if (x_val > 0 && y_val < 0.1) {
-                        theta = M_PI - std::atan(abs(y_val/x_val));
+                        theta = std::atan(abs(y_val/x_val));
                         // ROS_INFO_STREAM("theta 2: " << theta);
 
                     }
 
-                    else if (x_val > 0 && y_val > 0.1) {
+                    // top left quadrant
+                    else if (x_val < 0 && y_val > 0.1) {
                         theta = std::atan(abs(y_val/x_val)) + M_PI;
                         // ROS_INFO_STREAM("theta 1: " << theta);
                     }
 
-                    else if (x_val < 0 && y_val > 0) {
+                    // top right quadrant
+                    else if (x_val > 0 && y_val > 0.1) {
                         theta = 2*M_PI - std::atan(abs(y_val/x_val));
                         // ROS_INFO_STREAM("\n3\n");
                     }
