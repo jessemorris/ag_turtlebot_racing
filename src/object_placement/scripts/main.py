@@ -39,7 +39,7 @@ class ObjectPlacement():
 
     def getPixelCoordinates(self):
         #p = point in world frame [x,y,z,0]
-        x = 1
+        x = 0
         y = 0
         z = 0.5
         p = np.array([x,y,z,0])
@@ -104,7 +104,7 @@ class ObjectPlacement():
         ud = self.fx*xd + self.u0;
         vd= self.fy*yd + self.v0;
 
-        print(vd)
+        print(ud)
         print(vd)
 
 
