@@ -101,7 +101,46 @@ void Turtlebot::update_pose_camera(geometry_msgs::PoseStamped& pose) {
 
         if(filtered_pose) {
             camera_frame_odom_pub.publish(*filtered_pose);
+
+            transform.header.stamp = ros::Time::now();
+            transform.header.frame_id = "turtlebot_image_frame";
+            transform.child_frame_id = "turtlebot";
+            transform.transform.translation.x = filtered_pose->pose.position.x;
+            transform.transform.translation.y = filtered_pose->pose.position.y;
+            transform.transform.translation.z = 0.0;
+
+            tf2::Quaternion quat;
+
+            tf2::convert(filtered_pose->pose.orientation, quat);
+            quat.normalize();
+
+            transform.transform.rotation.x = quat.x();
+            transform.transform.rotation.y = quat.y();
+            transform.transform.rotation.z = quat.z();
+            transform.transform.rotation.w = quat.w();
+
+            transform_broadcaster.sendTransform(transform);
+
+
+            transform.header.stamp = ros::Time::now();
+            transform.header.frame_id = "turtlebot";
+            transform.child_frame_id = "rotated_turtlebot";
+            transform.transform.translation.x = 0;
+            transform.transform.translation.y = 0;
+            transform.transform.translation.z = 0.0;
+
+            quat.setRPY(M_PI/2.0, 0, 0);
+
+
+            transform.transform.rotation.x = quat.x();
+            transform.transform.rotation.y = quat.y();
+            transform.transform.rotation.z = quat.z();
+            transform.transform.rotation.w = quat.w();
+
+            transform_broadcaster.sendTransform(transform);
         }
+
+        
     }
 
 

@@ -11,7 +11,7 @@ int  main (int argc, char** argv){
 	ros::init(argc, argv, "mesh_visualiser");
 	ros::NodeHandle nh;
 
-    VirtualObject obj(nh, "bunny", 5, 5);
+    VirtualObject obj(nh, "bunny", 3, 1);
 	// VirtualObject ob1(nh, "dragon", 7, 7, ".ply");
 
     while(ros::ok()) {

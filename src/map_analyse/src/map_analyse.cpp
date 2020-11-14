@@ -65,8 +65,8 @@ MapAnalyse::MapAnalyse(ros::NodeHandle& _nh):
 
         geometry_msgs::TransformStamped transform;
         transform.header.stamp = ros::Time::now();
-        transform.header.frame_id = "/map";
-        transform.child_frame_id = "/turtlebot_image_frame";
+        transform.header.frame_id = "map";
+        transform.child_frame_id = "turtlebot_image_frame";
 
         ROS_INFO_STREAM("new thing here\n");
 
@@ -80,6 +80,29 @@ MapAnalyse::MapAnalyse(ros::NodeHandle& _nh):
         transform.transform.rotation.w = q.w();
 
         static_broadcster.sendTransform(transform);
+
+        //transform to camera coorindate math
+        geometry_msgs::TransformStamped transform_1;
+        transform_1.header.stamp = ros::Time::now();
+        transform_1.header.frame_id = "map";
+        transform_1.child_frame_id = "rotated_map";
+
+        ROS_INFO_STREAM("new thing here\n");
+
+        transform_1.transform.translation.x = 0;
+        transform_1.transform.translation.y = 0;
+        transform_1.transform.translation.z = 0;
+
+        tf2::Quaternion q1;
+        q1.setRPY(-M_PI/2.0, 0, 0);
+
+        transform_1.transform.rotation.x = q1.x();
+        transform_1.transform.rotation.y = q1.y();
+        transform_1.transform.rotation.z = q1.z();
+        transform_1.transform.rotation.w = q1.w();
+
+        static_broadcster.sendTransform(transform_1);
+
 
 
     }

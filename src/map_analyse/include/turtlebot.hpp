@@ -13,6 +13,9 @@
 #include <opencv2/videoio.hpp>
 #include <opencv2/highgui.hpp>
 #include <image_transport/image_transport.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <geometry_msgs/TransformStamped.h>
 #include <iostream>
 #include <stdio.h>
 
@@ -65,6 +68,9 @@ class Turtlebot {
         std::vector<geometry_msgs::PoseStamped> camera_frame_history;
         const geometry_msgs::PoseStamped& inital_pose_camera;
         //will eventually need some ros stuff here i think
+
+        tf2_ros::TransformBroadcaster transform_broadcaster;
+        geometry_msgs::TransformStamped transform;
 
 
         std::vector<float> x_positions;

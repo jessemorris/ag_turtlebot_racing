@@ -79,10 +79,12 @@ class ObjectPlacement():
 
 
 
+        camera_rotation = np.transpose(camera_rotation)
+
         # print(camera_rotation)
         # print(camera_translation)
         #extrinsic_matrix = [R', T'; 0,0,0,1]
-        extrinsic_matrix = np.concatenate((camera_rotation,camera_translation),axis = 1)
+        extrinsic_matrix = np.concatenate((np.transpose(camera_rotation),camera_translation),axis = 1)
         padding = np.array([[0,0,0,1]])
 
         # print(extrinsic_matrix)
@@ -124,7 +126,39 @@ class ObjectPlacement():
         ud = self.fx*xd + self.u0
         vd= self.fy*yd + self.v0
 
-        return [ud, vd]
+        return [int(round(u)), int(round(v))]
+
+    def overlay_image_alpha(self, img, img_overlay, pos, alpha_mask):
+        """Overlay img_overlay on top of img at the position specified by
+        pos and blend using alpha_mask.
+
+        Alpha mask must contain values within the range [0, 1] and be the
+        same size as img_overlay.
+        """
+
+        x, y = pos
+
+        # Image ranges
+        y1, y2 = max(0, y), min(img.shape[0], y + img_overlay.shape[0])
+        x1, x2 = max(0, x), min(img.shape[1], x + img_overlay.shape[1])
+
+        # Overlay ranges
+        y1o, y2o = max(0, -y), min(img_overlay.shape[0], img.shape[0] - y)
+        x1o, x2o = max(0, -x), min(img_overlay.shape[1], img.shape[1] - x)
+
+        # Exit if nothing to do
+        if y1 >= y2 or x1 >= x2 or y1o >= y2o or x1o >= x2o:
+            return
+
+        channels = img.shape[2]
+
+        alpha = alpha_mask[y1o:y2o, x1o:x2o]
+        alpha_inv = 1.0 - alpha
+
+        for c in range(channels):
+            img[y1:y2, x1:x2, c] = (alpha * img_overlay[y1o:y2o, x1o:x2o, c] +
+                                    alpha_inv * img[y1:y2, x1:x2, c])
+        return img
 
 
 
@@ -135,50 +169,70 @@ class ObjectPlacement():
         # print(self.cv_image.shape)
 
         try:
-            self.tf_listener.waitForTransform("turtlebot_image_frame", "map",rospy.Time(), rospy.Duration(secs=4) )
-            translation_turtlebot, rotation_turtlebot = self.tf_listener.lookupTransform("turtlebot_image_frame", "map",rospy.Time())
-            # print(translation_turtlebot)
-            # print(rotation_turtlebot)
+            self.tf_listener.waitForTransform("rotated_map", "rotated_turtlebot",rospy.Time(), rospy.Duration(secs=4) )
+            translation_turtlebot, rotation_turtlebot = self.tf_listener.lookupTransform("rotated_map", "rotated_turtlebot",rospy.Time())
+            print(translation_turtlebot)
+            print(rotation_turtlebot)
         except Exception as e:
             rospy.logwarn("Could not get map to turtlbot image frame transform")
             return False
 
         try:
-            self.tf_listener.waitForTransform("bunny", "map",rospy.Time(), rospy.Duration(secs=4) )
-            translation_object, rotation_object = self.tf_listener.lookupTransform("bunny", "map",rospy.Time())
+            self.tf_listener.waitForTransform("rotated_map", "bunny",rospy.Time(), rospy.Duration(secs=4) )
+            translation_object, rotation_object = self.tf_listener.lookupTransform("rotated_map", "bunny",rospy.Time())
         except Exception as e:
             rospy.logwarn("Could not get map to bunny frame transform")
             return False
 
         # for each of the objects in the world frame
         x_world, y_world, z_world = translation_object
-        # print(translation_object)
+
+        print(translation_object)
 
         # convert quaternion to rotation matrix
         rotation_matrix = quaternion_matrix(rotation_turtlebot)
         # print(rotation_matrix)
-        image_center_x, image_center_y = self.getPixelCoordinates(x_world, y_world, z_world,translation_turtlebot, rotation_matrix)
+        image_center_x, image_center_y = self.getPixelCoordinates(x_world,y_world, z_world ,translation_turtlebot, rotation_matrix)
+
+        # image_center_x =  - image_center_x/2
+        # image_center_y =  - image_center_y/2
+
+        print(image_center_x)
+        print(image_center_y)
+        
+
+        # #testing
+        # image_center_x = -100
+        # image_center_y = -200
 
         quaternion = Quaternion(0, 0, 0, 1)
         response = self.model_view_service(quaternion)
 
 
         model_image = ros_numpy.numpify(response.image)[... , :4][...,::-1]
-        print(model_image.shape)
-
-        h, w, c = self.cv_image.shape
-
-
-        result = np.zeros((h, w, 3), np.uint8)
-
-
-        # st = time()
         alpha = model_image[:, :, 3] / 255.0
-        result[:, :, 0] = (1. - alpha) * self.cv_image[:, :, 0] + alpha * model_image[:, :, 0]
-        result[:, :, 1] = (1. - alpha) * self.cv_image[:, :, 1] + alpha * model_image[:, :, 1]
-        result[:, :, 2] = (1. - alpha) * self.cv_image[:, :, 2] + alpha * model_image[:, :, 2]
-        # end = time() - st
-        # print(end)
+
+        result = self.overlay_image_alpha(self.cv_image,model_image,(image_center_x, image_center_y), alpha )
+
+        # print(model_image.shape)
+
+        # h, w, c = self.cv_image.shape
+
+        # model_image_translated = np.zeros(model_image.shape)
+
+        # model_image_translated[image_center_y:image_center_y + model_image.shape[0], image_center_x:image_center_x+model_image.shape[1]] = model_image
+
+
+        # result = np.zeros((h, w, 3), np.uint8)
+
+
+        # # st = time()
+        # alpha = model_image[:, :, 3] / 255.0
+        # result[:, :, 0] = (1. - alpha) * self.cv_image[:, :, 0] + alpha * model_image_translated[:, :, 0]
+        # result[:, :, 1] = (1. - alpha) * self.cv_image[:, :, 1] + alpha * model_image_translated[:, :, 1]
+        # result[:, :, 2] = (1. - alpha) * self.cv_image[:, :, 2] + alpha * model_image_translated[:, :, 2]
+        # # end = time() - st
+        # # print(end)
 
 
         output_image_message = ros_numpy.msgify(Image, result,encoding = '8UC3')

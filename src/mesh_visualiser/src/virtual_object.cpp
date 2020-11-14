@@ -113,7 +113,7 @@ VirtualObject::VirtualObject(ros::NodeHandle& _nh, const std::string& _object_na
 
 			static_transformstamped.transform.translation.x = global_x;
 			static_transformstamped.transform.translation.y = global_y;
-			static_transformstamped.transform.translation.z = 0;
+			static_transformstamped.transform.translation.z = 0.02;
 
 			static_transformstamped.transform.rotation.x = 0;
 			static_transformstamped.transform.rotation.y = 0;
