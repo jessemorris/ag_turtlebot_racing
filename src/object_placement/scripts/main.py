@@ -8,6 +8,7 @@ import numpy as np
 import math
 from mesh_visualiser.srv import RequestModelView
 from geometry_msgs.msg import Quaternion
+from tf.transformations import quaternion_matrix
 import tf
 
 class ObjectPlacement():
@@ -71,20 +72,27 @@ class ObjectPlacement():
 
         # T = np.array([[0],[0],[0]])
 
+        #convert to correct form for matrix operations
+        # print(camera_rotation)
+        camera_translation =  np.array([[camera_translation[0]],[camera_translation[1]],[camera_translation[2]]])
+        camera_rotation = np.array([camera_rotation[0][:3],camera_rotation[1][:3],camera_rotation[2][:3]])
 
 
 
-
+        # print(camera_rotation)
+        # print(camera_translation)
         #extrinsic_matrix = [R', T'; 0,0,0,1]
         extrinsic_matrix = np.concatenate((camera_rotation,camera_translation),axis = 1)
         padding = np.array([[0,0,0,1]])
+
+        # print(extrinsic_matrix)
 
         extrinsic_matrix = np.concatenate((extrinsic_matrix,padding))
 
 
         # test = np.matmul(K,extrinsic_matrix)
 
-        camera_frame = np.matmul(np.matmul(K,extrinsic_matrix),np.transpose(world_frame_point))
+        camera_frame = np.matmul(np.matmul(self.K,extrinsic_matrix),np.transpose(world_frame_point))
         # print(camera_frame)
 
 
@@ -129,8 +137,8 @@ class ObjectPlacement():
         try:
             self.tf_listener.waitForTransform("turtlebot_image_frame", "map",rospy.Time(), rospy.Duration(secs=4) )
             translation_turtlebot, rotation_turtlebot = self.tf_listener.lookupTransform("turtlebot_image_frame", "map",rospy.Time())
-            print(translation_turtlebot)
-            print(rotation_turtlebot)
+            # print(translation_turtlebot)
+            # print(rotation_turtlebot)
         except Exception as e:
             rospy.logwarn("Could not get map to turtlbot image frame transform")
             return False
@@ -144,8 +152,12 @@ class ObjectPlacement():
 
         # for each of the objects in the world frame
         x_world, y_world, z_world = translation_object
-        print(translation_object)
-        image_center_x, image_center_y = self.getPixelCoordinates(x_world, y_world, z_world,translation_turtlebot, rotation_turtlebot)
+        # print(translation_object)
+
+        # convert quaternion to rotation matrix
+        rotation_matrix = quaternion_matrix(rotation_turtlebot)
+        # print(rotation_matrix)
+        image_center_x, image_center_y = self.getPixelCoordinates(x_world, y_world, z_world,translation_turtlebot, rotation_matrix)
 
         quaternion = Quaternion(0, 0, 0, 1)
         response = self.model_view_service(quaternion)
