@@ -40,4 +40,4 @@ red_threshold:
     - 255
     - 255
 
-min_area: 1000
+min_area: 1100

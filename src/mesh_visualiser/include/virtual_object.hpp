@@ -131,7 +131,7 @@ class VirtualObject {
 
     public:
         VirtualObject(ros::NodeHandle& _nh, const std::string& _object_name, 
-			int _global_x, int _global_y, std::string file_suffix = ".pcd");
+			float _global_x, float _global_y, std::string file_suffix = ".pcd");
         ~VirtualObject();
 
         void compute_mesh_polygon(const pcl::PointCloud<PointTypeColor>::Ptr input, pcl::PolygonMesh &output,
@@ -144,8 +144,8 @@ class VirtualObject {
 
         ros::NodeHandle nh;
         const std::string object_name;
-		const int global_x;
-		const int global_y;
+		const float global_x;
+		const float global_y;
         std::string file_path;
 
         std::string resource_path;

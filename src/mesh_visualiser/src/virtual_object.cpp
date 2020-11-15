@@ -8,10 +8,10 @@
 
 #include <memory>
 
- 
 
-VirtualObject::VirtualObject(ros::NodeHandle& _nh, const std::string& _object_name, 
-	int _global_x, int _global_y, std::string file_suffix) :
+
+VirtualObject::VirtualObject(ros::NodeHandle& _nh, const std::string& _object_name,
+	float _global_x, float _global_y, std::string file_suffix) :
         nh(_nh),
 		global_x(_global_x),
 		global_y(_global_y),
@@ -64,7 +64,7 @@ VirtualObject::VirtualObject(ros::NodeHandle& _nh, const std::string& _object_na
 			Eigen::Affine3f transform_2 = Eigen::Affine3f::Identity();
 
 			transform_2.rotate(Eigen::AngleAxisf (M_PI/2, Eigen::Vector3f::UnitZ()) * Eigen::AngleAxisf (M_PI, Eigen::Vector3f::UnitX()) );
-			pcl::transformPointCloud(*point_cloud, *transformed_point_cloud, transform_2);  
+			pcl::transformPointCloud(*point_cloud, *transformed_point_cloud, transform_2);
 
 
 			angular_resolution_x = 0.1f;
@@ -85,13 +85,13 @@ VirtualObject::VirtualObject(ros::NodeHandle& _nh, const std::string& _object_na
 			viewer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_SHADING,
 														pcl::visualization::PCL_VISUALIZER_SHADING_FLAT,object_name);
 
-			
+
 
 			scene_sensor_pose = Eigen::Affine3f (Eigen::Translation3f (transformed_point_cloud->sensor_origin_[0] +  origin_x_offset,
 				transformed_point_cloud->sensor_origin_[1] + origin_y_offset,
 				transformed_point_cloud->sensor_origin_[2] + origin_z_offset)) *
 				Eigen::Affine3f (Eigen::AngleAxisf(M_PI/2.0, Eigen::Vector3f::UnitZ()));
-			
+
 			range_image = std::make_unique<pcl::RangeImage>();
 
 			range_image->createFromPointCloud (*transformed_point_cloud, angular_resolution_x, angular_resolution_y,
@@ -113,7 +113,7 @@ VirtualObject::VirtualObject(ros::NodeHandle& _nh, const std::string& _object_na
 
 			static_transformstamped.transform.translation.x = global_x;
 			static_transformstamped.transform.translation.y = global_y;
-			static_transformstamped.transform.translation.z = 0;
+			static_transformstamped.transform.translation.z = 0.0;
 
 			static_transformstamped.transform.rotation.x = 0;
 			static_transformstamped.transform.rotation.y = 0;
@@ -122,17 +122,42 @@ VirtualObject::VirtualObject(ros::NodeHandle& _nh, const std::string& _object_na
 
 			static_broadcaster.sendTransform(static_transformstamped);
 
-		}	
+
+			static_transformstamped.header.stamp = ros::Time::now();
+			static_transformstamped.header.frame_id = object_name;
+			static_transformstamped.child_frame_id = "rotated_" + object_name;
+
+			static_transformstamped.transform.translation.x = 0;
+			static_transformstamped.transform.translation.y = 0;
+			static_transformstamped.transform.translation.z = 0.0;
+
+
+			tf2::Quaternion quat;
+
+			quat.setRPY(-M_PI/2.0, 0, -M_PI/2.0);
+
+
+            static_transformstamped.transform.rotation.x = quat.x();
+            static_transformstamped.transform.rotation.y = quat.y();
+            static_transformstamped.transform.rotation.z = quat.z();
+            static_transformstamped.transform.rotation.w = quat.w();
+
+			static_broadcaster.sendTransform(static_transformstamped);
+
+
+
+
+		}
 
     }
 
 VirtualObject::~VirtualObject() {}
 
 bool VirtualObject::model_view_callback(mesh_visualiser::RequestModelView::Request& request,
-                                                mesh_visualiser::RequestModelView::Response& response) 
+                                                mesh_visualiser::RequestModelView::Response& response)
 	{
 		tf2::Quaternion last_orientation;
-		cv::Mat image;	
+		cv::Mat image;
 
     	tf2::convert(request.orientation, last_orientation);
 		ros::Duration(0.5).sleep();
@@ -158,7 +183,7 @@ void VirtualObject::compute_mesh_polygon(pcl::PointCloud<PointTypeColor>::Ptr in
 
 	pcl::PointCloud<pcl::PointNormal>::Ptr xyz_cloud (new pcl::PointCloud<pcl::PointNormal> ());
 	pcl::PointCloud<pcl::PointXYZ>::Ptr normal_cloud(new pcl::PointCloud<pcl::PointXYZ>);
-	
+
 
 	pcl::copyPointCloud(*input, *xyz_cloud);
   	pcl::copyPointCloud(*input, *normal_cloud);
@@ -235,11 +260,11 @@ bool VirtualObject::create_render(tf2::Quaternion orientation, cv::Mat& image) {
 
 	Eigen::Affine3f transform = Eigen::Affine3f::Identity();
 
-	transform.rotate(Eigen::AngleAxisf (euler[0], Eigen::Vector3f::UnitX()) * 
+	transform.rotate(Eigen::AngleAxisf (euler[0], Eigen::Vector3f::UnitX()) *
 					Eigen::AngleAxisf (euler[1], Eigen::Vector3f::UnitY()) *
 					Eigen::AngleAxisf (euler[2], Eigen::Vector3f::UnitZ()));
 
-	pcl::transformPointCloud(*point_cloud, *transformed_point_cloud, transform);  
+	pcl::transformPointCloud(*point_cloud, *transformed_point_cloud, transform);
 
 	//must re-render from orientated point cloud
 	compute_mesh_polygon(transformed_point_cloud, output, default_depth, default_solver_divide, default_iso_divide, default_point_weight);
@@ -251,7 +276,7 @@ bool VirtualObject::create_render(tf2::Quaternion orientation, cv::Mat& image) {
 	// vtk_render->SetOffScreenRendering(1);
 
 	viewer.addPolygonMesh(output, object_name);
-	
+
 	range_image->createFromPointCloud (*transformed_point_cloud, angular_resolution_x, angular_resolution_y,
 								pcl::deg2rad (360.0f), pcl::deg2rad (360.0f),
 								scene_sensor_pose, pcl::RangeImage::CAMERA_FRAME, noise_level, min_range, border_size);
@@ -261,7 +286,7 @@ bool VirtualObject::create_render(tf2::Quaternion orientation, cv::Mat& image) {
 
 	viewer.spinOnce();
     pcl_sleep (0.01);
-	
+
 
 
 
@@ -290,4 +315,3 @@ bool VirtualObject::create_render(tf2::Quaternion orientation, cv::Mat& image) {
 
 	return true;
 }
-

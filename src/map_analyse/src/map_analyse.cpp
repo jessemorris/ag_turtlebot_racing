@@ -65,8 +65,8 @@ MapAnalyse::MapAnalyse(ros::NodeHandle& _nh):
 
         geometry_msgs::TransformStamped transform;
         transform.header.stamp = ros::Time::now();
-        transform.header.frame_id = "/map";
-        transform.child_frame_id = "/turtlebot_image_frame";
+        transform.header.frame_id = "map";
+        transform.child_frame_id = "turtlebot_image_frame";
 
         ROS_INFO_STREAM("new thing here\n");
 
@@ -80,6 +80,29 @@ MapAnalyse::MapAnalyse(ros::NodeHandle& _nh):
         transform.transform.rotation.w = q.w();
 
         static_broadcster.sendTransform(transform);
+
+        //transform to camera coorindate math
+        geometry_msgs::TransformStamped transform_1;
+        transform_1.header.stamp = ros::Time::now();
+        transform_1.header.frame_id = "map";
+        transform_1.child_frame_id = "rotated_map";
+
+        ROS_INFO_STREAM("new thing here\n");
+
+        transform_1.transform.translation.x = 0;
+        transform_1.transform.translation.y = 0;
+        transform_1.transform.translation.z = 0;
+
+        tf2::Quaternion q1;
+        q1.setRPY(-M_PI/2.0, 0, -M_PI/2.0);
+
+        transform_1.transform.rotation.x = q1.x();
+        transform_1.transform.rotation.y = q1.y();
+        transform_1.transform.rotation.z = q1.z();
+        transform_1.transform.rotation.w = q1.w();
+
+        static_broadcster.sendTransform(transform_1);
+
 
 
     }
@@ -131,14 +154,14 @@ bool MapAnalyse::get_turtlebot_pose(cv::Mat& src, geometry_msgs::PoseStamped& po
     // cv::bitwise_or(mask1, mask2, mask);
 
     //close small holes
-    cv::Mat morph_kernel_open = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5,5), cv::Point(-1,-1));
-    cv::Mat morph_kernel_close = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(1,1), cv::Point(-1,-1));
-    cv::Mat morph_kernel_open_last = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(15,15), cv::Point(-1,-1));
+    cv::Mat morph_kernel_open = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(7,7), cv::Point(-1,-1));
+    cv::Mat morph_kernel_close = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(15, 15), cv::Point(-1,-1));
+    cv::Mat morph_kernel_open_last = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5), cv::Point(-1,-1));
 
 
     cv::morphologyEx(mask, mask, cv::MORPH_OPEN, morph_kernel_open);
     cv::morphologyEx(mask, mask, cv::MORPH_CLOSE, morph_kernel_close);
-    cv::morphologyEx(mask, mask, cv::MORPH_OPEN, morph_kernel_open_last);
+    // cv::morphologyEx(mask, mask, cv::MORPH_OPEN, morph_kernel_open_last);
 
 
 
@@ -187,8 +210,12 @@ bool MapAnalyse::get_turtlebot_pose(cv::Mat& src, geometry_msgs::PoseStamped& po
         double area = cv::contourArea(contours[i]);
         // ROS_INFO_STREAM("area " << area);
 
+        // ROS_INFO_STREAM("area: " << area);
+
 
         if (area > min_area) {
+
+            // ROS_INFO_STREAM("entered min area");
 
             moments[i] = cv::moments(contours[i]);
 
@@ -376,16 +403,16 @@ bool MapAnalyse::get_turtlebot_pose(cv::Mat& src, geometry_msgs::PoseStamped& po
                 // cv::line( dst, back_line.first, back_line.second, cv::Scalar(0,0,255),10);
                 // float min_x_front = std::min(front_line.first.x, front_line.second.x);
                 // float min_y_front = std::min(front_line.first.y, front_line.second.y);
-                float center_x_front = std::abs(front_line.first.x + front_line.second.x)/2.0;
-                float center_y_front = std::abs(front_line.first.y + front_line.second.y)/2.0;
+                float center_x_front = std::abs(back_line.first.x + back_line.second.x)/2.0;
+                float center_y_front = std::abs(back_line.first.y + back_line.second.y)/2.0;
                 cv::Point diff = front_line.first - front_line.second;
                 int euclid_front =  cv::sqrt(diff.x*diff.x + diff.y*diff.y);
 
 
                 // float min_x_back = std::min(back_line.first.x, back_line.second.x);
                 // float min_y_back = std::min(back_line.first.y, back_line.second.y);
-                float center_x_back = std::abs(back_line.first.x + back_line.second.x)/2.0;
-                float center_y_back = std::abs(back_line.first.y + back_line.second.y)/2.0;
+                float center_x_back = std::abs(front_line.first.x + front_line.second.x)/2.0;
+                float center_y_back = std::abs(front_line.first.y + front_line.second.y)/2.0;
                 diff = back_line.first - back_line.second;
                 int euclid_back =  cv::sqrt(diff.x*diff.x + diff.y*diff.y);
 
@@ -395,8 +422,11 @@ bool MapAnalyse::get_turtlebot_pose(cv::Mat& src, geometry_msgs::PoseStamped& po
                 else {
 
                     cv::Point2f start_of_arrow(center_x_back, center_y_back);
+                    // cv::Point2f start_of_arrow(center_x_front, center_y_front);
 
                     cv::Point2f end_of_arrow(center_x_front, center_y_front);
+                    // cv::Point2f end_of_arrow(center_x_back, center_y_back);
+
                     // cv::Point2f start_of_arrow =  centroids[i];
                     cv::arrowedLine(dst, start_of_arrow, end_of_arrow, color, 20);
 
@@ -454,6 +484,12 @@ bool MapAnalyse::get_turtlebot_pose(cv::Mat& src, geometry_msgs::PoseStamped& po
                     pose_stamped.header = header;
                 }
             }
+        }
+
+
+        else {
+
+
         }
     }
 

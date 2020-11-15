@@ -277,7 +277,7 @@ int  main (int argc, char** argv){
 	// -----------------------------------------------
 	float noise_level = 0.0;
 	float min_range = 0.0f;
-	int border_size = 1;
+	int border_size = 10;
 	pcl::RangeImage::Ptr range_image_ptr(new pcl::RangeImage);
 	pcl::RangeImage& range_image = *range_image_ptr;   
 	range_image.createFromPointCloud (*transformed_point_cloud, angular_resolution_x, angular_resolution_y,
@@ -286,6 +286,7 @@ int  main (int argc, char** argv){
 
 
 	pcl::visualization::PCLVisualizer mesh_viewer ("3D Mesh Viewer");
+	pcl::visualization::PCLVisualizer viewer ("3D Viewer");
   
 
   
@@ -298,6 +299,9 @@ int  main (int argc, char** argv){
   mesh_viewer.addPolygonMesh(output, "polygon");
   mesh_viewer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_SHADING,
                                             pcl::visualization::PCL_VISUALIZER_SHADING_FLAT, "polygon");
+
+	viewer.setShapeRenderingProperties(pcl::visualization::PCL_VISUALIZER_SHADING,
+                                            pcl::visualization::PCL_VISUALIZER_SHADING_FLAT, "polygon");
    
   // mesh_viewer.addCoordinateSystem (3.0f, "global");
 
@@ -307,24 +311,28 @@ int  main (int argc, char** argv){
 
   ROS_INFO_STREAM("made viewer");
 //   //can set camea parameters
-//   viewer.initCameraParameters ();
-//   setViewerPose(viewer, range_image.getTransformationToWorldSystem ());
+  viewer.initCameraParameters ();
+  viewer.addPointCloud(transformed_point_cloud);
+  viewer.setBackgroundColor (255, 255, 255);
+//   viewer.addCoordinateSystem(1.0);
+  setViewerPose(viewer, range_image.getTransformationToWorldSystem ());
   
   // --------------------------
   // -----Show range image-----
   // --------------------------
-//   pcl::visualization::RangeImageVisualizer range_image_widget ("Range image");
-//   range_image_widget.showRangeImage (range_image);
+  pcl::visualization::RangeImageVisualizer range_image_widget ("Range image");
+  range_image_widget.showRangeImage (range_image);
 
   
   //--------------------
   // -----Main loop-----
   //--------------------
   cv::Mat image;
-  while (!mesh_viewer.wasStopped()) {
+  while (!mesh_viewer.wasStopped() && !viewer.wasStopped ()) {
     // range_image_widget.spinOnce ();
     // viewer.spinOnce ();
     mesh_viewer.spinOnce();
+	viewer.spinOnce();
     pcl_sleep (0.01);
     
 	

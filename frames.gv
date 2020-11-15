@@ -1,0 +1,17 @@
+digraph G {
+"map" -> "bunny"[label="Broadcaster: /mesh_visualiser\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1605407389.363 sec old)\nBuffer length: 0.000 sec\n"];
+"bunny" -> "rotated_bunny"[label="Broadcaster: /mesh_visualiser\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1605407389.363 sec old)\nBuffer length: 0.000 sec\n"];
+"map" -> "turtlebot_image_frame"[label="Broadcaster: /map_analyse\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1605407389.363 sec old)\nBuffer length: 0.000 sec\n"];
+"map" -> "rotated_map"[label="Broadcaster: /map_analyse\nAverage rate: 10000.000 Hz\nMost recent transform: 0.000 ( 1605407389.363 sec old)\nBuffer length: 0.000 sec\n"];
+"turtlebot_image_frame" -> "turtlebot"[label="Broadcaster: /map_analyse\nAverage rate: 7.203 Hz\nMost recent transform: 1605407389.315 ( 0.048 sec old)\nBuffer length: 4.859 sec\n"];
+"turtlebot" -> "rotated_turtlebot"[label="Broadcaster: /map_analyse\nAverage rate: 7.203 Hz\nMost recent transform: 1605407389.315 ( 0.048 sec old)\nBuffer length: 4.859 sec\n"];
+"odom" -> "base_footprint"[label="Broadcaster: /turtlebot3_core\nAverage rate: 22.257 Hz\nMost recent transform: 1605407389.393 ( -0.029 sec old)\nBuffer length: 4.897 sec\n"];
+edge [style=invis];
+ subgraph cluster_legend { style=bold; color=black; label ="view_frames Result";
+"Recorded at time: 1605407389.363"[ shape=plaintext ] ;
+ }->"map";
+edge [style=invis];
+ subgraph cluster_legend { style=bold; color=black; label ="view_frames Result";
+"Recorded at time: 1605407389.363"[ shape=plaintext ] ;
+ }->"odom";
+}
