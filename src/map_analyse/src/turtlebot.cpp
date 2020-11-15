@@ -107,12 +107,20 @@ void Turtlebot::update_pose_camera(geometry_msgs::PoseStamped& pose) {
             transform.child_frame_id = "turtlebot";
             transform.transform.translation.x = filtered_pose->pose.position.x;
             transform.transform.translation.y = filtered_pose->pose.position.y;
-            transform.transform.translation.z = 0.0;
+            transform.transform.translation.z = -0.5; //mm
 
             tf2::Quaternion quat;
 
             tf2::convert(filtered_pose->pose.orientation, quat);
+
             quat.normalize();
+
+            double r, p, y;
+            tf2::Matrix3x3 m(quat);
+            m.getRPY(r, p, y);
+
+            quat.setRPY(r+M_PI, p, y);
+            
 
             transform.transform.rotation.x = quat.x();
             transform.transform.rotation.y = quat.y();
@@ -127,9 +135,9 @@ void Turtlebot::update_pose_camera(geometry_msgs::PoseStamped& pose) {
             transform.child_frame_id = "rotated_turtlebot";
             transform.transform.translation.x = 0;
             transform.transform.translation.y = 0;
-            transform.transform.translation.z = 0.0;
+            transform.transform.translation.z = 0;
 
-            quat.setRPY(M_PI/2.0, 0, 0);
+            quat.setRPY(-M_PI/2.0, 0, -M_PI/2.0);
 
 
             transform.transform.rotation.x = quat.x();
@@ -364,7 +372,7 @@ std::unique_ptr<geometry_msgs::PoseStamped> Turtlebot::filter_poses(double x_ave
     average_pose->pose.position.z = 0;
 
     std_msgs::Header header;
-    header.frame_id = "/turtlebot_image_frame";
+    header.frame_id = "turtlebot_image_frame";
     header.stamp = ros::Time::now();
 
     average_pose->header = header;

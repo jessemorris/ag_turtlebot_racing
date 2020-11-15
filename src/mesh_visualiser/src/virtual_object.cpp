@@ -11,7 +11,7 @@
 
 
 VirtualObject::VirtualObject(ros::NodeHandle& _nh, const std::string& _object_name,
-	int _global_x, int _global_y, std::string file_suffix) :
+	float _global_x, float _global_y, std::string file_suffix) :
         nh(_nh),
 		global_x(_global_x),
 		global_y(_global_y),
@@ -113,7 +113,7 @@ VirtualObject::VirtualObject(ros::NodeHandle& _nh, const std::string& _object_na
 
 			static_transformstamped.transform.translation.x = global_x;
 			static_transformstamped.transform.translation.y = global_y;
-			static_transformstamped.transform.translation.z = 0.02;
+			static_transformstamped.transform.translation.z = 0.0;
 
 			static_transformstamped.transform.rotation.x = 0;
 			static_transformstamped.transform.rotation.y = 0;
@@ -121,6 +121,31 @@ VirtualObject::VirtualObject(ros::NodeHandle& _nh, const std::string& _object_na
 			static_transformstamped.transform.rotation.w = 1;
 
 			static_broadcaster.sendTransform(static_transformstamped);
+
+
+			static_transformstamped.header.stamp = ros::Time::now();
+			static_transformstamped.header.frame_id = object_name;
+			static_transformstamped.child_frame_id = "rotated_" + object_name;
+
+			static_transformstamped.transform.translation.x = 0;
+			static_transformstamped.transform.translation.y = 0;
+			static_transformstamped.transform.translation.z = 0.0;
+
+
+			tf2::Quaternion quat;
+
+			quat.setRPY(-M_PI/2.0, 0, -M_PI/2.0);
+
+
+            static_transformstamped.transform.rotation.x = quat.x();
+            static_transformstamped.transform.rotation.y = quat.y();
+            static_transformstamped.transform.rotation.z = quat.z();
+            static_transformstamped.transform.rotation.w = quat.w();
+
+			static_broadcaster.sendTransform(static_transformstamped);
+
+
+
 
 		}
 

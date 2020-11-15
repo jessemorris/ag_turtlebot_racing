@@ -94,7 +94,7 @@ MapAnalyse::MapAnalyse(ros::NodeHandle& _nh):
         transform_1.transform.translation.z = 0;
 
         tf2::Quaternion q1;
-        q1.setRPY(-M_PI/2.0, 0, 0);
+        q1.setRPY(-M_PI/2.0, 0, -M_PI/2.0);
 
         transform_1.transform.rotation.x = q1.x();
         transform_1.transform.rotation.y = q1.y();
@@ -155,8 +155,8 @@ bool MapAnalyse::get_turtlebot_pose(cv::Mat& src, geometry_msgs::PoseStamped& po
 
     //close small holes
     cv::Mat morph_kernel_open = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(7,7), cv::Point(-1,-1));
-    cv::Mat morph_kernel_close = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5,5), cv::Point(-1,-1));
-    cv::Mat morph_kernel_open_last = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5,5), cv::Point(-1,-1));
+    cv::Mat morph_kernel_close = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(15, 15), cv::Point(-1,-1));
+    cv::Mat morph_kernel_open_last = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5), cv::Point(-1,-1));
 
 
     cv::morphologyEx(mask, mask, cv::MORPH_OPEN, morph_kernel_open);
