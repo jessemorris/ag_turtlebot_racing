@@ -1,5 +1,4 @@
 #include <ros/ros.h>
-
 #include <cv_bridge/cv_bridge.h>
 #include <tf2/convert.h>
 #include "tf/transform_datatypes.h"
@@ -7,29 +6,22 @@
 #include "geometry_msgs/Quaternion.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include <tf2/transform_datatypes.h>
-
-
 #include <iostream>
 #include <stdio.h>
 #include <memory>
-
-
 #include <string>
 #include <vector>
 #include <algorithm>
 #include <numeric>
-
-
 #include "turtlebot.hpp"
 
 
 tf2::Quaternion inverse_sign_quaternion(tf2::Quaternion& q);
+
 bool are_quats_close(tf2::Quaternion& q1, tf2::Quaternion& q2);
+
 tf2::Quaternion average_quaternion(Vec4d& cumulative, tf2::Quaternion& newRotation,
     tf2::Quaternion& firstRotation, int addAmount);
-
-
-
 
 Turtlebot::Turtlebot(ros::NodeHandle& _nh, const geometry_msgs::PoseStamped&
     _inital_pose, int _history_size):
@@ -51,7 +43,6 @@ void Turtlebot::update_pose_camera(geometry_msgs::PoseStamped& pose) {
         x_positions.erase(x_positions.begin());
         y_positions.erase(y_positions.begin());
         pitch_val.erase(pitch_val.begin());
-
     }
 
 
@@ -60,13 +51,8 @@ void Turtlebot::update_pose_camera(geometry_msgs::PoseStamped& pose) {
 
     compute_average_pose(x_average, y_average, pitch_average_sum, vec);
 
-
-    //calculate std of pose vector
-    //if pose within x of std put onto camera_frame_history
-
     camera_frame_history.push_back(pose);
 
-    // push pitch
     tf2::Quaternion current_quat;
     tf2::convert(camera_frame_history.back().pose.orientation, current_quat);
     double roll, pitch, yaw;
@@ -74,8 +60,7 @@ void Turtlebot::update_pose_camera(geometry_msgs::PoseStamped& pose) {
     m.getRPY(roll, pitch, yaw);
 
 
-    if ( !isnan(yaw)) {
-
+    if (!isnan(yaw)) {
 
         pitch_val.push_back(yaw);
 
@@ -94,8 +79,6 @@ void Turtlebot::update_pose_camera(geometry_msgs::PoseStamped& pose) {
 
         // geometry_msgs::PoseStamped pose_filtered;
         std_remove_outlier_pose(x_average, y_average, pitch_average_sum, camera_frame_history);
-
-
 
         std::unique_ptr<geometry_msgs::PoseStamped> filtered_pose = filter_poses(x_average, y_average, vec);
 
@@ -120,7 +103,6 @@ void Turtlebot::update_pose_camera(geometry_msgs::PoseStamped& pose) {
             m.getRPY(r, p, y);
 
             quat.setRPY(r+M_PI, p, y);
-            
 
             transform.transform.rotation.x = quat.x();
             transform.transform.rotation.y = quat.y();
@@ -128,7 +110,6 @@ void Turtlebot::update_pose_camera(geometry_msgs::PoseStamped& pose) {
             transform.transform.rotation.w = quat.w();
 
             transform_broadcaster.sendTransform(transform);
-
 
             transform.header.stamp = ros::Time::now();
             transform.header.frame_id = "turtlebot";
@@ -139,7 +120,6 @@ void Turtlebot::update_pose_camera(geometry_msgs::PoseStamped& pose) {
 
             quat.setRPY(-M_PI/2.0, 0, -M_PI/2.0);
 
-
             transform.transform.rotation.x = quat.x();
             transform.transform.rotation.y = quat.y();
             transform.transform.rotation.z = quat.z();
@@ -147,41 +127,32 @@ void Turtlebot::update_pose_camera(geometry_msgs::PoseStamped& pose) {
 
             transform_broadcaster.sendTransform(transform);
         }
-
-        
     }
-
-
-
 }
+
 
 bool Turtlebot::compute_average_pose(double& x_average, double& y_average,
     double& pitch_average_sum, Vec4d& quat_average) {
 
-
-
     if (camera_frame_history.size() < 2) {
         return false;
     }
+
     //get first quat for averaging. This may be problem if the first one is bad
     tf2::Quaternion quat_first;
-    // tf2::quaternionMsgToTF(camera_frame_history[0].pose.orientation, quat_first);
+
     tf2::convert(camera_frame_history[0].pose.orientation, quat_first);
 
     ROS_INFO_STREAM("averaging " << camera_frame_history.size() << " poses");
+
     //get averages
     for(auto& pose :camera_frame_history) {
         tf2::Quaternion quat;
-        // tf2::quaternionMsgToTF(pose.pose.orientation, quat);
-        tf2::convert(pose.pose.orientation, quat);
 
-        //if averaging quats dont work we can just average yaw
-        // double roll, pitch, yaw;
-        // tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+        tf2::convert(pose.pose.orientation, quat);
 
         average_quaternion(quat_average, quat, quat_first, camera_frame_history.size());
 
-        // yaw_average += yaw;
         x_average += pose.pose.position.x;
         y_average += pose.pose.position.y;
 
@@ -189,48 +160,18 @@ bool Turtlebot::compute_average_pose(double& x_average, double& y_average,
         tf2::Matrix3x3 m(quat);
         m.getRPY(average_roll, average_pitch, average_yaw);
 
-        // ROS_INFO_STREAM("roll " << average_roll << " pitch " << average_pitch << " yaw " << average_yaw);
-
-
         pitch_average_sum += average_yaw;
 
 
     }
-
-    //we have now averaged the quaternions so this should now be the average yaw
-    // tf2::Quaternion quat_cumulative(vec.x, vec.y, vec.z, vec.w);
-    // double roll, pitch;
-    // tf2::Matrix3x3(quat_cumulative).getRPY(roll, pitch, yaw_average);
 
     x_average/=camera_frame_history.size();
     y_average/=camera_frame_history.size();
     pitch_average_sum/=camera_frame_history.size();
 
 
-    //
-    return true;
 
-    // std::unique_ptr<geometry_msgs::PoseStamped> average_pose =
-    //     std::make_unique<geometry_msgs::PoseStamped>();
-    //
-    // geometry_msgs::Quaternion ori;
-    // tf2::convert(quat_cumulative, ori);
-    //
-    // pose_stamped->pose.orientation = ori;
-    //
-    //
-    // pose_stamped->pose.position.x = x_average;
-    // pose_stamped->pose.position.y = y_average;
-    // pose_stamped->pose.position.z = 0;
-    //
-    // std_msgs::Header header;
-    // header.frame_id = "/map";
-    // header.stamp = ros::Time::now();
-    //
-    // pose_stamped->header = header;
-    //
-    //
-    // return pose_stamped;
+    return true;
 }
 
 bool Turtlebot::std_remove_outlier_pose(double& x_average, double& y_average,
