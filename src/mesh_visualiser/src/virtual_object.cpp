@@ -36,13 +36,6 @@ VirtualObject::VirtualObject(ros::NodeHandle& _nh, const std::string& _object_na
 		nh.getParam("/mesh_visualiser/origin_y_offset", origin_y_offset);
 		nh.getParam("/mesh_visualiser/origin_z_offset", origin_z_offset);
 
-
-		// ROS_INFO_STREAM("default depth " << default_depth);
-		// ROS_INFO_STREAM("default_solver_divide " << default_solver_divide);
-		// ROS_INFO_STREAM("default_iso_divide " << default_iso_divide);
-		// ROS_INFO_STREAM("default_point_weight " << default_point_weight);
-
-
 		resource_path = ros::package::getPath("mesh_visualiser") + std::string("/pc_resources");
 		file_path = resource_path + "/" + object_name + file_suffix;
 
@@ -143,10 +136,6 @@ VirtualObject::VirtualObject(ros::NodeHandle& _nh, const std::string& _object_na
             static_transformstamped.transform.rotation.w = quat.w();
 
 			static_broadcaster.sendTransform(static_transformstamped);
-
-
-
-
 		}
 
     }
@@ -171,8 +160,6 @@ bool VirtualObject::model_view_callback(mesh_visualiser::RequestModelView::Reque
 		response.image = *img_msg;
 
 		return true;
-
-
 
 	}
 
@@ -243,8 +230,6 @@ void VirtualObject::set_viewer_pose(const Eigen::Affine3f& viewer_pose) {
 	viewer.setCameraPosition(pos_vector[0], pos_vector[1], pos_vector[2],
 		look_at_vector[0], look_at_vector[1], look_at_vector[2],
 		up_vector[0], up_vector[1], up_vector[2]);
-
-
 }
 
 
@@ -287,9 +272,6 @@ bool VirtualObject::create_render(tf2::Quaternion orientation, cv::Mat& image) {
 	viewer.spinOnce();
     pcl_sleep (0.01);
 
-
-
-
 	vtkSmartPointer<vtkWindowToImageFilter> windowToImageFilter = vtkSmartPointer<vtkWindowToImageFilter>::New();
 	windowToImageFilter->SetInput(vtk_render);
 	windowToImageFilter->Update();
@@ -303,15 +285,10 @@ bool VirtualObject::create_render(tf2::Quaternion orientation, cv::Mat& image) {
 
 	unsigned char *pixels = vtk_render->GetRGBACharPixelData(0, 0, imageWidth - 1, imageHeight - 1, true);
 
-
-
 	image = cv::Mat(imageHeight, imageWidth, CV_8UC4, pixels);
-	// ROS_INFO_STREAM(image.rows << " " << image.cols);
 
 	cv::flip(image,image, 0);
 	cv::resize(image, image, cv::Size(640,480));
-
-
 
 	return true;
 }

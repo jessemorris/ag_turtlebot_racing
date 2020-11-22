@@ -161,15 +161,11 @@ bool Turtlebot::compute_average_pose(double& x_average, double& y_average,
         m.getRPY(average_roll, average_pitch, average_yaw);
 
         pitch_average_sum += average_yaw;
-
-
     }
 
     x_average/=camera_frame_history.size();
     y_average/=camera_frame_history.size();
     pitch_average_sum/=camera_frame_history.size();
-
-
 
     return true;
 }
@@ -177,115 +173,86 @@ bool Turtlebot::compute_average_pose(double& x_average, double& y_average,
 bool Turtlebot::std_remove_outlier_pose(double& x_average, double& y_average,
     double& pitch_average_sum, std::vector<geometry_msgs::PoseStamped>& camera_frame_history) {
 
-        float x_position_sum = 0;
-        float y_position_sum = 0;
-        float pitch_sum = 0;
+    float x_position_sum = 0;
+    float y_position_sum = 0;
+    float pitch_sum = 0;
 
-        // ROS_INFO_STREAM("size: " << x_positions.size());
+    for (int i = 0; i < x_positions.size(); i++) {
 
-        for (int i = 0; i < x_positions.size(); i++) {
+        pitch_sum += pow(pitch_val[i] - (float)pitch_average_sum, 2.0);
+        x_position_sum += pow(x_positions[i] - (float)x_average, 2.0);
+        y_position_sum += pow(y_positions[i] - (float)y_average, 2.0);
+    }
 
-            pitch_sum += pow(pitch_val[i] - (float)pitch_average_sum, 2.0);
-            x_position_sum += pow(x_positions[i] - (float)x_average, 2.0);
-            y_position_sum += pow(y_positions[i] - (float)y_average, 2.0);
+    float pitch_std = pow(pitch_sum/camera_frame_history.size(), 0.5);
+    float x_std = pow(x_position_sum/camera_frame_history.size(), 0.5);
+    float y_std = pow(y_position_sum/camera_frame_history.size(), 0.5);
 
-            // ROS_INFO_STREAM("pitch_val[i]: " << pitch_val[i]);
-            // ROS_INFO_STREAM("x_pos[i]: " << x_positions[i]);
-            // ROS_INFO_STREAM("y_pos[i]: " << y_positions[i]);
+    float x_amt = 1.5;
+    float y_amt = 1.5;
+    float pitch_amt = M_PI/10;
 
+    float upper_delta = pitch_average_sum + pitch_std*pitch_amt;
+    float lower_delta = pitch_average_sum - pitch_std*pitch_amt;
 
+    bool upper_flag = false;
+    bool lower_flag = false;
+    bool pitch_bool = false;
+    bool x_bool = true;
+    bool y_bool = true;
+
+    if (upper_delta > M_PI) {
+        upper_delta = upper_delta - 2*M_PI;
+        upper_flag = true;
+    }
+    else if (lower_delta < -M_PI) {
+        lower_delta = lower_delta + 2*M_PI;
+        lower_flag = true;
+    }
+
+    if ( (!upper_flag && !lower_flag) && (lower_delta < pitch_val.back()
+        && pitch_val.back() < upper_delta ) ) {
+            pitch_bool = true;
+        }
+    else if ( (upper_flag && !lower_flag) && (lower_delta < pitch_val.back()
+        && pitch_val.back() < upper_delta ) ) {
+            pitch_bool = true;
+        }
+    else if ( (!upper_flag && lower_flag) && (lower_delta < pitch_val.back()
+        && pitch_val.back() < upper_delta ) ) {
+            pitch_bool = true;
         }
 
-        float pitch_std = pow(pitch_sum/camera_frame_history.size(), 0.5);
-        float x_std = pow(x_position_sum/camera_frame_history.size(), 0.5);
-        float y_std = pow(y_position_sum/camera_frame_history.size(), 0.5);
+    float const_val = 0.5;
 
-        ROS_INFO_STREAM("pitch std: " << pitch_std << " x_std: " << x_std
-            << " y_std: " << y_std);
+    if (x_average-x_amt*x_std-const_val < x_positions.back() &&
+            x_positions.back() < x_average+x_amt*x_std+const_val) {
 
-        float x_amt = 1.5;
-        float y_amt = 1.5;
-        float pitch_amt = M_PI/10;
+            ROS_INFO_STREAM("x average within standard deviation");
+            x_bool = false;
+    }
 
-        float upper_delta = pitch_average_sum + pitch_std*pitch_amt;
-        float lower_delta = pitch_average_sum - pitch_std*pitch_amt;
+    if (y_average-y_amt*y_std-const_val < y_positions.back() &&
+        y_positions.back() < y_average+y_amt*y_std+const_val) {
 
+            ROS_INFO_STREAM("y average within standard deviation");
+            y_bool = false;
+    }
 
-        bool upper_flag = false;
-        bool lower_flag = false;
-        bool pitch_bool = false;
-        bool x_bool = true;
-        bool y_bool = true;
+    if ( x_bool || y_bool || !pitch_bool     ) {
 
-        if (upper_delta > M_PI) {
-            upper_delta = upper_delta - 2*M_PI;
-            upper_flag = true;
-        }
-        else if (lower_delta < -M_PI) {
-            lower_delta = lower_delta + 2*M_PI;
-            lower_flag = true;
-        }
+        ROS_INFO_STREAM("X OR Y OR PITCH OUTSIDE OF STD");
 
-        ROS_INFO_STREAM("upper_flag: " << upper_flag << " lower_flag: " <<
-            lower_flag);
-
-        if ( (!upper_flag && !lower_flag) && (lower_delta < pitch_val.back()
-            && pitch_val.back() < upper_delta ) ) {
-                pitch_bool = true;
-            }
-        else if ( (upper_flag && !lower_flag) && (lower_delta < pitch_val.back()
-            && pitch_val.back() < upper_delta ) ) {
-                pitch_bool = true;
-            }
-        else if ( (!upper_flag && lower_flag) && (lower_delta < pitch_val.back()
-            && pitch_val.back() < upper_delta ) ) {
-                pitch_bool = true;
-            }
-
-        float const_val = 0.5;
-
-        if (x_average-x_amt*x_std-const_val < x_positions.back() &&
-                x_positions.back() < x_average+x_amt*x_std+const_val) {
-
-                ROS_INFO_STREAM("x average within standard deviation");
-                x_bool = false;
-        }
-
-        if (y_average-y_amt*y_std-const_val < y_positions.back() &&
-            y_positions.back() < y_average+y_amt*y_std+const_val) {
-
-                ROS_INFO_STREAM("y average within standard deviation");
-                y_bool = false;
-        }
-
-        if ( x_bool || y_bool  ) {
-
-            ROS_INFO_STREAM("X OR Y OUTSIDE OF STD");
-
-            // camera_frame_history.pop_back();
-            // x_positions.pop_back();
-            // y_positions.pop_back();
-            // pitch_val.pop_back();
-
-        }
-
-
-                    // if (pitch_bool) {
-                    //
-                    //     ROS_INFO_STREAM("pitch within standard deviation");
-                    //
-
-                    // }
-
-
-
-
-
-
-
-    return true;
+        camera_frame_history.pop_back();
+        x_positions.pop_back();
+        y_positions.pop_back();
+        pitch_val.pop_back();
 
     }
+
+return true;
+
+}
 
 
 
@@ -330,23 +297,8 @@ const geometry_msgs::PoseStamped& Turtlebot::get_latest_camera_pose() const {
 }
 
 
-
-//some code to help with Quaternions
-//http://wiki.unity3d.com/index.php/Averaging_Quaternions_and_Vectors
-
 tf2::Quaternion average_quaternion(Vec4d& cumulative, tf2::Quaternion& newRotation,
     tf2::Quaternion& firstRotation, int addAmount){
-    //
-	// float average_w = 0.0f;
-	// float average_x = 0.0f;
-	// float average_y = 0.0f;
-	// float average_z = 0.0f;
-    //
-    // float sum_w = 0.0f;
-	// float sum_x = 0.0f;
-	// float sum_y = 0.0f;
-	// float sum_z = 0.0f;
-
 	//Before we add the new rotation to the average (mean), we have to check
     // whether the quaternion has to be inverted. Because q and -q are the same
     // rotation, but cannot be averaged, we have to make sure they are all the same.
@@ -354,42 +306,6 @@ tf2::Quaternion average_quaternion(Vec4d& cumulative, tf2::Quaternion& newRotati
 
 		newRotation = inverse_sign_quaternion(newRotation);
 	}
-
-    // // Calculate std
-    // average_w = cumulative.w/(float)addAmount;
-    // ROS_INFO_STREAM("Average w: " << average_w);
-    // average_x = cumulative.x/(float)addAmount;
-    // ROS_INFO_STREAM("Average x: " << average_x);
-    // average_y = cumulative.y/(float)addAmount;
-    // ROS_INFO_STREAM("Average y: " << average_y);
-    // average_z = cumulative.z/(float)addAmount;
-    // ROS_INFO_STREAM("Average z: " << average_z);
-    //
-    // for (int i = 0; i < frame_history.size(); i++) {
-    //     sum_w += pow(frame_history[i].pose.orientation.w - (float)average_w, 2.0);
-    //     sum_x += pow(frame_history[i].pose.orientation.x - (float)average_x, 2.0);
-    //     sum_y += pow(frame_history[i].pose.orientation.y - (float)average_y, 2.0);
-    //     sum_z += pow(frame_history[i].pose.orientation.z - (float)average_z, 2.0);
-    // }
-    //
-    // sum_w = pow(sum_w/addAmount, 0.5);
-    // sum_x = pow(sum_x/addAmount, 0.5);
-    // sum_y = pow(sum_y/addAmount, 0.5);
-    // sum_z = pow(sum_z/addAmount, 0.5);
-    //
-    // float std_val = 2.0;
-    //
-    // if (sum_w*std_val< 0  - newRotation.w()  || sum_x*std_val - newRotation.x() < 0
-    //     || sum_y*std_val - newRotation.y() < 0 || sum_z*std_val - newRotation.z() < 0  ) {
-    //
-    //     frame_history.pop_back();
-    // }
-
-
-
-
-
-
 
 	//Average the values
 	float addDet = 1.0f/(float)addAmount;
@@ -402,20 +318,8 @@ tf2::Quaternion average_quaternion(Vec4d& cumulative, tf2::Quaternion& newRotati
 	cumulative.z += newRotation.z();
 	float z = cumulative.z * addDet;
 
-	//note: if speed is an issue, you can skip the normalization step
-	// return NormalizeQuaternion(x, y, z, w);
-    // return tf2::Quaternion(average_x, average_y, average_z, average_w);
     return tf2::Quaternion(x, y, z, w);
 }
-
-
-
-
-
-
-
-
-
 
 
 //Changes the sign of the quaternion components. This is not the same as the inverse.
